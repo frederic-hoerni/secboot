@@ -50,10 +50,10 @@ type winCertificateAuthenticodeHdr struct {
 	winCertificateHdr
 }
 
-// ReadWinCertificateAuthenticodeDetached creates a new [efi.WinCertificateAuthenticode]
+// ReadWinCertificateAuthenticodeDetachedBase creates a new [efi.WinCertificateAuthenticode]
 // structure from the supplied detached Authenticode signature. It's expected that this
 // doesn't have the WIN_CERTIFICATE header.
-func ReadWinCertificateAuthenticodeDetached(c *C, der []byte) *efi.WinCertificateAuthenticode {
+func ReadWinCertificateAuthenticodeDetachedBase(der []byte) (efi.WinCertificate, error) {
 	hdr := &winCertificateAuthenticodeHdr{
 		winCertificateHdr: winCertificateHdr{
 			Length:          uint32(binary.Size(winCertificateAuthenticodeHdr{}) + len(der)),
@@ -67,7 +67,24 @@ func ReadWinCertificateAuthenticodeDetached(c *C, der []byte) *efi.WinCertificat
 	buf.Write(der)
 
 	sig, err := efi.ReadWinCertificate(buf)
+	return sig, err
+}
+
+// ReadWinCertificateAuthenticodeDetached call ReadWinCertificateAuthenticodeDetachedBase and
+// asserts there is no error within the given test context.
+func ReadWinCertificateAuthenticodeDetached(c *C, der []byte) *efi.WinCertificateAuthenticode {
+	sig, err := ReadWinCertificateAuthenticodeDetachedBase(der)
 	c.Assert(err, IsNil)
+	return sig.(*efi.WinCertificateAuthenticode)
+}
+
+// MustReadWinCertificateAuthenticodeDetached call ReadWinCertificateAuthenticodeDetachedBase and
+// panics on error.
+func MustReadWinCertificateAuthenticodeDetached(der []byte) *efi.WinCertificateAuthenticode {
+	sig, err := ReadWinCertificateAuthenticodeDetachedBase(der)
+	if err != nil {
+		panic(err)
+	}
 	return sig.(*efi.WinCertificateAuthenticode)
 }
 
