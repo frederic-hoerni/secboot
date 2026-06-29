@@ -19,32 +19,32 @@ Options:
 `
 
 func main() {
-        args := os.Args
+	args := os.Args
 	if len(args) <= 1 {
 		fmt.Print(Usage)
 		os.Exit(1)
 	}
 
-        args = args[1:] // pop argument zero
+	args = args[1:] // pop argument zero
 	arg := &args[0]
 	args = args[1:] // pop argument zero
 	subcommand := reencrypt
 	switch *arg {
-	        case "--status":
-		        subcommand = status
-			arg = nil
-		case "--initialize":
-		        subcommand = initialize
-			arg = nil
-		case "--resume":
-		        subcommand = resume
-			arg = nil
-		default:
+	case "--status":
+		subcommand = status
+		arg = nil
+	case "--initialize":
+		subcommand = initialize
+		arg = nil
+	case "--resume":
+		subcommand = resume
+		arg = nil
+	default:
 	}
 	if arg == nil {
-	        // get it from the next CLI argument
+		// get it from the next CLI argument
 		if len(os.Args) <= 0 {
-		        fmt.Fprintf(os.Stderr, "Missing DISK argument")
+			fmt.Fprintf(os.Stderr, "Missing DISK argument")
 			os.Exit(1)
 		}
 		arg = &args[0]
@@ -121,6 +121,9 @@ func resume(devicePath string) error {
 
 	for msg := range reencProgressChannel {
 		fmt.Println("xfh: msg=", msg)
+		if msg.Type == secboot.ReencryptionProgressCompleted || msg.Type == secboot.ReencryptionProgressError {
+			break
+		}
 	}
 	return nil
 }

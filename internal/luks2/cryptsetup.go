@@ -92,6 +92,30 @@ func cryptsetupCmd(stdin io.Reader, args ...string) error {
 	return nil
 }
 
+func cryptsetupCmdAsync(stdin io.Reader, args ...string) (*exec.Cmd, io.ReadCloser, io.ReadCloser, error) {
+	cmd := exec.Command("cryptsetup", args...)
+	cmd.Stdin = stdin
+
+	// Grab pipes for stdout and stderr before starting the command
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("cryptsetup(async): cannot get stdout pipe")
+	}
+
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("cryptsetup(async): cannot get stderr pipe")
+	}
+
+	// Start the process (non-blocking)
+	err = cmd.Start()
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("cryptsetup(async): cannot start the process")
+	}
+
+	return cmd, stdoutPipe, stderrPipe, nil
+}
+
 // DetectCryptsetupFeatures returns the features supported by the cryptsetup binary
 // on this system.
 func DetectCryptsetupFeatures() Features {
@@ -528,8 +552,8 @@ func ReencryptInitialize(devicePath string, unlockKeys [][]byte) error {
 	return cryptsetupCmd(cmdInput, args...)
 }
 
-func ReencryptResume(devicePath string, unlockKey []byte) error {
-        fmt.Fprintf(os.Stderr, "TODO: remove --force-offline-reencrypt\n")
+func ReencryptResume(devicePath string, unlockKey []byte) (*exec.Cmd, io.ReadCloser, io.ReadCloser, error) {
+	fmt.Fprintf(os.Stderr, "TODO: remove --force-offline-reencrypt\n")
 	args := []string{
 		"reencrypt",
 		"--type", "luks2",
@@ -542,5 +566,5 @@ func ReencryptResume(devicePath string, unlockKey []byte) error {
 
 	// Unlock key is read from stdin
 	cmdInput := bytes.NewReader(unlockKey)
-	return cryptsetupCmd(cmdInput, args...)
+	return cryptsetupCmdAsync(cmdInput, args...)
 }
