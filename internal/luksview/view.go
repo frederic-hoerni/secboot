@@ -201,3 +201,14 @@ func (v *View) UsedKeyslots() (slots []int) {
 	sort.Ints(slots)
 	return slots
 }
+
+// HasReencrypt returns how many keyslots are of type "reencrypt"
+func (v *View) HasReencrypt() int {
+	count := 0
+	for _, slot := range v.hdr.Metadata.Keyslots {
+		if slot.Type == "reencrypt" {
+			count++
+		}
+	}
+	return count
+}

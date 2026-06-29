@@ -506,3 +506,38 @@ func SetSlotPriority(devicePath string, slot int, priority SlotPriority) error {
 func TestContainerKey(devicePath string, key []byte) bool {
 	return cryptsetupCmd(bytes.NewReader(key), "open", "--test-passphrase", "--key-file", "-", devicePath) == nil
 }
+
+func ReencryptInitialize(devicePath string, unlockKeys [][]byte) error {
+	args := []string{
+		"reencrypt",
+		"--type", "luks2",
+		// read existing key from stdin
+		"--key-file", "-",
+		"--batch-mode",
+		"--init-only",
+		devicePath}
+
+	// Provide all keys on the child's stdin (concatenated)
+	var allKeys []byte
+	for _, unlockKey := range unlockKeys {
+		allKeys = append(allKeys, unlockKey...)
+	}
+	// TODO: only one given now. Use extended cryptsetup version and provide all.
+	cmdInput := bytes.NewReader(allKeys)
+	return cryptsetupCmd(cmdInput, args...)
+}
+
+func ReencryptResume(devicePath string, unlockKey []byte) error {
+	args := []string{
+		"reencrypt",
+		"--type", "luks2",
+		// read existing key from stdin
+		"--key-file", "-",
+		"--batch-mode",
+		"--resume-only",
+		devicePath}
+
+	// Unlock key is read from stdin
+	cmdInput := bytes.NewReader(unlockKey)
+	return cryptsetupCmd(cmdInput, args...)
+}
