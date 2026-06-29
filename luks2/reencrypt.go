@@ -23,7 +23,7 @@ func (r reencryptionImpl) Status() (*secboot.ReencryptionStatus, error) {
 	}
 	nReencrypt := view.HasReencrypt()
 	if nReencrypt > 0 {
-		var status secboot.ReencryptionStatus = secboot.ReencryptionStatusInProgress
+		var status secboot.ReencryptionStatus = secboot.ReencryptionStatusInitialized
 		return &status, nil
 		// TODO distinguish in-progress / interrupted?
 		//return secboot.ReencryptionStatusInterrupted, nil
@@ -50,6 +50,10 @@ func superviseReencryption(cmd *exec.Cmd, stdoutPipe io.ReadCloser, stderrPipe i
 		scanner := bufio.NewScanner(pipe)
 		for scanner.Scan() {
 			outChan <- secboot.ReencryptionProgressEvent{Type: secboot.ReencryptionProgressRunning, Message: scanner.Text()}
+		}
+		err := scanner.Err()
+		if err != nil {
+			outChan <- secboot.ReencryptionProgressEvent{Type: secboot.ReencryptionProgressRunning, Message: "scan error:" + err.Error()}
 		}
 		outputDone <- struct{}{}
 	}

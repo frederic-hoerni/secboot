@@ -6,8 +6,7 @@ type ReencryptionStatus int
 
 const (
 	ReencryptionStatusNone = iota
-	ReencryptionStatusInterrupted
-	ReencryptionStatusInProgress
+	ReencryptionStatusInitialized
 )
 
 type ReencryptionProgressEventType int
@@ -23,10 +22,8 @@ func (r ReencryptionStatus) String() string {
 	switch r {
 	case ReencryptionStatusNone:
 		return "none"
-	case ReencryptionStatusInterrupted:
-		return "interrupted"
-	case ReencryptionStatusInProgress:
-		return "in-progress"
+	case ReencryptionStatusInitialized:
+		return "initialized"
 	default:
 		return fmt.Sprintf("unknown-%d", int(r))
 	}

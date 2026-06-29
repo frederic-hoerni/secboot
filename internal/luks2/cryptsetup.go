@@ -540,7 +540,7 @@ func ReencryptInitialize(devicePath string, unlockKeys [][]byte) error {
 		"--key-file", "-",
 		"--batch-mode",
 		"--init-only",
-		devicePath}
+		"--active-name", "test01"}
 
 	// Provide all keys on the child's stdin (concatenated)
 	var allKeys []byte
@@ -561,8 +561,10 @@ func ReencryptResume(devicePath string, unlockKey []byte) (*exec.Cmd, io.ReadClo
 		"--key-file", "-",
 		"--batch-mode",
 		"--resume-only",
-		"--force-offline-reencrypt",
-		devicePath}
+		"--progress-frequency", "1",
+		"--progress-json",
+		"--hotzone-size", "10M",
+		"--active-name", "test01"}
 
 	// Unlock key is read from stdin
 	cmdInput := bytes.NewReader(unlockKey)

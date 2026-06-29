@@ -121,8 +121,15 @@ func resume(devicePath string) error {
 
 	for msg := range reencProgressChannel {
 		fmt.Println("xfh: msg=", msg)
-		if msg.Type == secboot.ReencryptionProgressCompleted || msg.Type == secboot.ReencryptionProgressError {
+		switch msg.Type {
+		case secboot.ReencryptionProgressCompleted:
 			break
+		case secboot.ReencryptionProgressError:
+			break
+		case secboot.ReencryptionProgressStarted:
+			continue
+		case secboot.ReencryptionProgressRunning:
+			continue
 		}
 	}
 	return nil
