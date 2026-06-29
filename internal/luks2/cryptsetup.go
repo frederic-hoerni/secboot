@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -528,6 +529,7 @@ func ReencryptInitialize(devicePath string, unlockKeys [][]byte) error {
 }
 
 func ReencryptResume(devicePath string, unlockKey []byte) error {
+        fmt.Fprintf(os.Stderr, "TODO: remove --force-offline-reencrypt\n")
 	args := []string{
 		"reencrypt",
 		"--type", "luks2",
@@ -535,6 +537,7 @@ func ReencryptResume(devicePath string, unlockKey []byte) error {
 		"--key-file", "-",
 		"--batch-mode",
 		"--resume-only",
+		"--force-offline-reencrypt",
 		devicePath}
 
 	// Unlock key is read from stdin

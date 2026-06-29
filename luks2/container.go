@@ -197,5 +197,5 @@ func (c *storageContainerImpl) OpenRead(ctx context.Context) (secboot.StorageCon
 
 // NewReencryption implements [secboot.StorageContainer.NewReencryption]
 func (c *storageContainerImpl) NewReencryption() secboot.Reencryption {
-        return reencryptionImpl{path: c.Path()}
+	return reencryptionImpl{path: c.Path()}
 }

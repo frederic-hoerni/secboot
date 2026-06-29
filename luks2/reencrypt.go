@@ -41,6 +41,11 @@ func (r reencryptionImpl) Initialize(unlockKeys map[string][]byte) error {
 
 func (r reencryptionImpl) Resume(unlockKey []byte) (<-chan secboot.ReencryptionProgressEvent, error) {
 	outChan := make(chan secboot.ReencryptionProgressEvent)
+
+        err := luks2.ReencryptResume(r.path, unlockKey)
+	if err != nil {
+	        return nil, err
+	}
 	go func() {
 		defer close(outChan)
 		outChan <- secboot.ReencryptionProgressEvent{Type: secboot.ReencryptionProgressStarted}

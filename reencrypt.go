@@ -20,11 +20,30 @@ const (
 )
 
 func (r ReencryptionStatus) String() string {
-        switch r {
-	        case ReencryptionStatusNone: return "none"
-		case ReencryptionStatusInterrupted: return "interrupted"
-		case ReencryptionStatusInProgress: return "in-progress"
-		default: return fmt.Sprintf("unknown-%v", r)
+	switch r {
+	case ReencryptionStatusNone:
+		return "none"
+	case ReencryptionStatusInterrupted:
+		return "interrupted"
+	case ReencryptionStatusInProgress:
+		return "in-progress"
+	default:
+		return fmt.Sprintf("unknown-%d", int(r))
+	}
+}
+
+func (r ReencryptionProgressEventType) String() string {
+	switch r {
+	case ReencryptionProgressStarted:
+		return "started"
+	case ReencryptionProgressRunning:
+		return "running"
+	case ReencryptionProgressCompleted:
+		return "completed"
+	case ReencryptionProgressError:
+		return "error"
+	default:
+		return fmt.Sprintf("unknown-%d", int(r))
 	}
 }
 
