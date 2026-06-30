@@ -15,7 +15,7 @@ const Usage = `usage: reencrypt [options] DISK
 Options:
     --status      Only query the reencryption status
     --initialize  Only initialize reencryption
-    --resumt      Only resume reencryption
+    --resume      Only resume reencryption
 `
 
 func main() {
