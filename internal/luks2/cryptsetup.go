@@ -21,6 +21,7 @@ package luks2
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -92,8 +93,8 @@ func cryptsetupCmd(stdin io.Reader, args ...string) error {
 	return nil
 }
 
-func cryptsetupCmdAsync(stdin io.Reader, args ...string) (*exec.Cmd, io.ReadCloser, io.ReadCloser, error) {
-	cmd := exec.Command("cryptsetup", args...)
+func cryptsetupCmdAsync(ctx context.Context, stdin io.Reader, args ...string) (*exec.Cmd, io.ReadCloser, io.ReadCloser, error) {
+	cmd := exec.CommandContext(ctx, "cryptsetup", args...)
 	cmd.Stdin = stdin
 
 	// Grab pipes for stdout and stderr before starting the command
@@ -552,7 +553,7 @@ func ReencryptInitialize(devicePath string, unlockKeys [][]byte) error {
 	return cryptsetupCmd(cmdInput, args...)
 }
 
-func ReencryptResume(devicePath string, unlockKey []byte) (*exec.Cmd, io.ReadCloser, io.ReadCloser, error) {
+func ReencryptResume(ctx context.Context, devicePath string, unlockKey []byte) (*exec.Cmd, io.ReadCloser, io.ReadCloser, error) {
 	fmt.Fprintf(os.Stderr, "TODO: remove --force-offline-reencrypt\n")
 	args := []string{
 		"reencrypt",
@@ -568,5 +569,5 @@ func ReencryptResume(devicePath string, unlockKey []byte) (*exec.Cmd, io.ReadClo
 
 	// Unlock key is read from stdin
 	cmdInput := bytes.NewReader(unlockKey)
-	return cryptsetupCmdAsync(cmdInput, args...)
+	return cryptsetupCmdAsync(ctx, cmdInput, args...)
 }

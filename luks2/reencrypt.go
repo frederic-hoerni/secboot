@@ -76,10 +76,10 @@ func superviseReencryption(cmd *exec.Cmd, stdoutPipe io.ReadCloser, stderrPipe i
 	}
 }
 
-func (r reencryptionImpl) Resume(unlockKey []byte) (<-chan secboot.ReencryptionProgressEvent, error) {
+func (r reencryptionImpl) Resume(ctx context.Context, unlockKey []byte) (<-chan secboot.ReencryptionProgressEvent, error) {
 	outChan := make(chan secboot.ReencryptionProgressEvent)
 
-	cmd, stdout, stderr, err := luks2.ReencryptResume(r.path, unlockKey)
+	cmd, stdout, stderr, err := luks2.ReencryptResume(ctx, r.path, unlockKey)
 	if err != nil {
 		return nil, err
 	}

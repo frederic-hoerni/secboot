@@ -114,7 +114,7 @@ func resume(devicePath string) error {
 	}
 	reencryption := container.NewReencryption()
 
-	reencProgressChannel, err := reencryption.Resume([]byte("0000"))
+	reencProgressChannel, err := reencryption.Resume(context.Background(), []byte("0000"))
 	if err != nil {
 		return fmt.Errorf("cannot resume: %w", err)
 	}

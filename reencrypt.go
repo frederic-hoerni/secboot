@@ -1,6 +1,9 @@
 package secboot
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 type ReencryptionStatus int
 
@@ -57,5 +60,5 @@ type ReencryptionProgressEvent struct {
 type Reencryption interface {
 	Status() (*ReencryptionStatus, error)
 	Initialize(unlockKeys map[string][]byte) error
-	Resume(unlockKey []byte) (<-chan ReencryptionProgressEvent, error)
+	Resume(ctx context.Context, unlockKey []byte) (<-chan ReencryptionProgressEvent, error)
 }
