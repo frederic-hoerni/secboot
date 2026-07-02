@@ -26,7 +26,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -533,7 +532,7 @@ func TestContainerKey(devicePath string, key []byte) bool {
 	return cryptsetupCmd(bytes.NewReader(key), "open", "--test-passphrase", "--key-file", "-", devicePath) == nil
 }
 
-func ReencryptInitialize(devicePath string, unlockKeys [][]byte) error {
+func ReencryptInitialize(activeName string, unlockKeys [][]byte) error {
 	args := []string{
 		"reencrypt",
 		"--type", "luks2",
@@ -541,7 +540,7 @@ func ReencryptInitialize(devicePath string, unlockKeys [][]byte) error {
 		"--key-file", "-",
 		"--batch-mode",
 		"--init-only",
-		"--active-name", "test01"}
+		"--active-name", activeName}
 
 	// Provide all keys on the child's stdin (concatenated)
 	var allKeys []byte
@@ -553,8 +552,7 @@ func ReencryptInitialize(devicePath string, unlockKeys [][]byte) error {
 	return cryptsetupCmd(cmdInput, args...)
 }
 
-func ReencryptResume(ctx context.Context, devicePath string, unlockKey []byte) (*exec.Cmd, io.ReadCloser, io.ReadCloser, error) {
-	fmt.Fprintf(os.Stderr, "TODO: remove --force-offline-reencrypt\n")
+func ReencryptResume(ctx context.Context, activeName string, unlockKey []byte) (*exec.Cmd, io.ReadCloser, io.ReadCloser, error) {
 	args := []string{
 		"reencrypt",
 		"--type", "luks2",
@@ -565,7 +563,7 @@ func ReencryptResume(ctx context.Context, devicePath string, unlockKey []byte) (
 		"--progress-frequency", "1",
 		"--progress-json",
 		"--hotzone-size", "10M",
-		"--active-name", "test01"}
+		"--active-name", activeName}
 
 	// Unlock key is read from stdin
 	cmdInput := bytes.NewReader(unlockKey)

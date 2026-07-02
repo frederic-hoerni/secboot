@@ -3,19 +3,24 @@ package main
 import (
 	"context"
 	"fmt"
-	efi "github.com/canonical/go-efilib"
 	"github.com/snapcore/secboot"
-	"github.com/snapcore/secboot/internal/luksview"
 	_ "github.com/snapcore/secboot/luks2" // This gets the LUKS2 backend initialized
 	"os"
 )
 
 const Usage = `usage: reencrypt [options] DISK
 
+Reencrypt an active encrypted container.
+
 Options:
     --status      Only query the reencryption status
     --initialize  Only initialize reencryption
     --resume      Only resume reencryption
+
+Examples:
+    reencrypt --status /dev/sda3
+    reencrypt --initialize /dev/sda3
+    reencrypt --resume /dev/sda3
 `
 
 func main() {
@@ -49,6 +54,7 @@ func main() {
 		}
 		arg = &args[0]
 	}
+
 	err := subcommand(*arg)
 	if err != nil {
 		fmt.Println("error:", err)
@@ -79,22 +85,27 @@ func reencrypt(devicePath string) error {
 }
 
 func status(devicePath string) error {
-	view, err := luksview.NewView(context.TODO(), devicePath)
-	if err != nil {
-		return fmt.Errorf("cannot obtain LUKS header view: %w", err)
-	}
-	nReencrypt := view.HasReencrypt()
-	fmt.Println("Status:", nReencrypt)
-	return nil
-}
-
-func initialize(devicePath string) error {
-	container, err := secboot.FindStorageContainer(efi.DefaultVarContext, devicePath)
+	container, err := secboot.FindStorageContainer(context.Background(), devicePath)
 	if err != nil {
 		fmt.Printf("Cannot find storage (LUKS) container: %v\n", err)
 		return err
 	}
-	reencryption := container.NewReencryption()
+	reencryption := container.NewReencryption(context.Background())
+	status, err := reencryption.Status()
+	if err != nil {
+		return fmt.Errorf("Cannot get reencryption status: %w", err)
+	}
+	fmt.Println("Status:", status)
+	return nil
+}
+
+func initialize(devicePath string) error {
+	container, err := secboot.FindStorageContainer(context.Background(), devicePath)
+	if err != nil {
+		fmt.Printf("Cannot find storage (LUKS) container: %v\n", err)
+		return err
+	}
+	reencryption := container.NewReencryption(context.Background())
 
 	unlockKeys := make(map[string][]byte)
 	unlockKeys["1"] = []byte("0000")
@@ -107,14 +118,14 @@ func initialize(devicePath string) error {
 }
 
 func resume(devicePath string) error {
-	container, err := secboot.FindStorageContainer(efi.DefaultVarContext, devicePath)
+	container, err := secboot.FindStorageContainer(context.Background(), devicePath)
 	if err != nil {
 		fmt.Printf("Cannot find storage (LUKS) container: %v\n", err)
 		return err
 	}
-	reencryption := container.NewReencryption()
+	reencryption := container.NewReencryption(context.Background())
 
-	reencProgressChannel, err := reencryption.Resume(context.Background(), []byte("0000"))
+	reencProgressChannel, err := reencryption.Resume([]byte("0000"))
 	if err != nil {
 		return fmt.Errorf("cannot resume: %w", err)
 	}
@@ -123,9 +134,9 @@ func resume(devicePath string) error {
 		fmt.Println("xfh: msg=", msg)
 		switch msg.Type {
 		case secboot.ReencryptionProgressCompleted:
-			break
+			return nil
 		case secboot.ReencryptionProgressError:
-			break
+			return nil
 		case secboot.ReencryptionProgressStarted:
 			continue
 		case secboot.ReencryptionProgressRunning:

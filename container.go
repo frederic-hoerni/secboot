@@ -121,7 +121,7 @@ type StorageContainer interface {
 	OpenRead(ctx context.Context) (StorageContainerReader, error)
 
 	// Reencryption returns a handler for reencryption operations
-	NewReencryption() Reencryption
+	NewReencryption(ctx context.Context) Reencryption
 }
 
 // FindStorageContainer returns a StorageContainer associated with the specified

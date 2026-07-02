@@ -13,11 +13,13 @@ import (
 
 // reencryptionImpl is an implementation of [secboot.Reencryption].
 type reencryptionImpl struct {
-	path string
+	backendPath  string
+	dmActiveName string
+	ctx          context.Context
 }
 
 func (r reencryptionImpl) Status() (*secboot.ReencryptionStatus, error) {
-	view, err := luksview.NewView(context.TODO(), r.path)
+	view, err := luksview.NewView(r.ctx, r.backendPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot obtain LUKS header view: %w", err)
 	}
@@ -39,7 +41,7 @@ func (r reencryptionImpl) Initialize(unlockKeys map[string][]byte) error {
 	for _, unlockKey := range unlockKeys {
 		unlockKeysOrdered = append(unlockKeysOrdered, unlockKey)
 	}
-	return luks2.ReencryptInitialize(r.path, unlockKeysOrdered)
+	return luks2.ReencryptInitialize(r.dmActiveName, unlockKeysOrdered)
 }
 
 func superviseReencryption(cmd *exec.Cmd, stdoutPipe io.ReadCloser, stderrPipe io.ReadCloser, outChan chan<- secboot.ReencryptionProgressEvent) {
@@ -76,10 +78,10 @@ func superviseReencryption(cmd *exec.Cmd, stdoutPipe io.ReadCloser, stderrPipe i
 	}
 }
 
-func (r reencryptionImpl) Resume(ctx context.Context, unlockKey []byte) (<-chan secboot.ReencryptionProgressEvent, error) {
+func (r reencryptionImpl) Resume(unlockKey []byte) (<-chan secboot.ReencryptionProgressEvent, error) {
 	outChan := make(chan secboot.ReencryptionProgressEvent)
 
-	cmd, stdout, stderr, err := luks2.ReencryptResume(ctx, r.path, unlockKey)
+	cmd, stdout, stderr, err := luks2.ReencryptResume(r.ctx, r.dmActiveName, unlockKey)
 	if err != nil {
 		return nil, err
 	}

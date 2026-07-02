@@ -196,6 +196,12 @@ func (c *storageContainerImpl) OpenRead(ctx context.Context) (secboot.StorageCon
 }
 
 // NewReencryption implements [secboot.StorageContainer.NewReencryption]
-func (c *storageContainerImpl) NewReencryption() secboot.Reencryption {
-	return reencryptionImpl{path: c.Path()}
+func (c *storageContainerImpl) NewReencryption(ctx context.Context) secboot.Reencryption {
+	activeName, _ := c.ActiveVolumeName(ctx)
+
+	return reencryptionImpl{
+		backendPath:  c.Path(),
+		dmActiveName: activeName,
+		ctx:          ctx,
+	}
 }
