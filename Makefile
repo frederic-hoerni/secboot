@@ -9,7 +9,7 @@ help:
 # Disable optimization and inlining (to facilitate step-by-step debugging)
 GCFLAGS = -gcflags "-N -l"
 
-.PHONY: build check check-tpm2-simulator FORCE
+.PHONY: build check check-tpm2-simulator fmt FORCE
 FORCE:
 
 # Build command line programs
