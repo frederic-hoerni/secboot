@@ -78,8 +78,10 @@ func (c *storageContainerImpl) ActiveVolumeName(ctx context.Context) (string, er
 
 	// Iterate over the list of active DM volumes.
 	for _, path := range dmDevices {
+		fmt.Println("xfh: ActiveVolumeName: path=", path)
 		// Obtain a source device path from this DM volume path.
 		sourcePath, err := sourceDeviceFromDMDevice(ctx, path)
+		fmt.Println("xfh: ActiveVolumeName: sourcePath=", sourcePath)
 		if err == errUnsupportedTargetType {
 			// The table for this DM volume has a target type that we
 			// don't recognize, so ignore it.
@@ -95,6 +97,8 @@ func (c *storageContainerImpl) ActiveVolumeName(ctx context.Context) (string, er
 		if err := unixStat(sourcePath, &st); err != nil {
 			return "", &os.PathError{Op: "stat", Path: sourcePath, Err: err}
 		}
+		fmt.Println("xfh: ActiveVolumeName: st.Rdev=", st.Rdev, "c.dev=", c.dev)
+
 		if st.Rdev != c.dev {
 			// The source path for this DM volume is not related to this container
 			// because they have different device numbers, so continue and try the
@@ -114,6 +118,8 @@ func (c *storageContainerImpl) ActiveVolumeName(ctx context.Context) (string, er
 		if err != nil {
 			return "", fmt.Errorf("cannot read volume name for %s: %w", path, err)
 		}
+		fmt.Println("xfh: ActiveVolumeName: name=", name)
+
 		volumeName := strings.TrimRight(string(name), "\n") // The kernel adds a newline
 		if volumeName == "" {
 			// This should never happen as it's an invalid name, but, just in case...
@@ -193,15 +199,4 @@ func (c *storageContainerImpl) OpenRead(ctx context.Context) (secboot.StorageCon
 	return &storageContainerReader{
 		impl: &storageContainerReadWriterImpl{container: c},
 	}, nil
-}
-
-// NewReencryption implements [secboot.StorageContainer.NewReencryption]
-func (c *storageContainerImpl) NewReencryption(ctx context.Context) secboot.Reencryption {
-	activeName, _ := c.ActiveVolumeName(ctx)
-
-	return reencryptionImpl{
-		backendPath:  c.Path(),
-		dmActiveName: activeName,
-		ctx:          ctx,
-	}
 }

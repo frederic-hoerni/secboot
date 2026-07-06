@@ -158,6 +158,20 @@ func (b *storageContainerBackend) ProbeActivated(ctx context.Context, path strin
 	return nil, nil
 }
 
+func (b *storageContainerBackend) NewOnlineReencryption(ctx context.Context, activeName string) (secboot.Reencryption, error) {
+	// Get the source path.
+	// cryptsetup status <activeName>
+	sourcePath := "TODO"
+
+	reencryption := reencryptionImpl{
+		sourcePath:   sourcePath,
+		dmActiveName: activeName,
+		ctx:          ctx,
+	}
+
+	return reencryption, nil
+}
+
 func init() {
 	secboot.RegisterStorageContainerBackend(storageContainerBackendName, newStorageContainerBackend())
 }

@@ -20,6 +20,7 @@
 package luks2
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -29,6 +30,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -77,6 +79,11 @@ const (
 	// https://gitlab.com/cryptsetup/cryptsetup/-/commit/98cd52c8d7bddf5b4c1ff775158a48bbb522acb2
 	FeatureTokenReplace
 )
+
+type CryptsetupStatus struct {
+	Device       string
+	Reencryption string
+}
 
 // cryptsetupCmd is a helper for running the cryptsetup command. If stdin is supplied, data read
 // from it is supplied to cryptsetup via its stdin. If callback is supplied, it will be invoked
@@ -568,4 +575,40 @@ func ReencryptResume(ctx context.Context, activeName string, unlockKey []byte) (
 	// Unlock key is read from stdin
 	cmdInput := bytes.NewReader(unlockKey)
 	return cryptsetupCmdAsync(ctx, cmdInput, args...)
+}
+
+func ReadCryptsetupStatus(ctx context.Context, activeName string) (*CryptsetupStatus, error) {
+	cmd := exec.CommandContext(ctx, "cryptsetup", "status", activeName)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("cannot get cryptsetup status for %s: %w", activeName, err)
+	}
+
+	outReader := bytes.NewReader(out)
+
+	scanner := bufio.NewScanner(outReader)
+	var device, reencryption string
+	for scanner.Scan() {
+		line := scanner.Text()
+		tokens := strings.Fields(string(line))
+		if len(tokens) > 1 {
+			switch tokens[0] {
+			case "device:":
+				device = tokens[1]
+			case "reencryption:":
+				reencryption = tokens[1]
+			}
+		}
+		//for _, token := range tokens {
+		//       fmt.Println("Status: token=", token)
+		//}
+	}
+	err = scanner.Err()
+	if err != nil {
+		fmt.Println("Status: err=", err)
+	}
+	return &CryptsetupStatus{
+		Device:       device,
+		Reencryption: reencryption,
+	}, nil
 }

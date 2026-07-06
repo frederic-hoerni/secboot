@@ -1,7 +1,13 @@
 package secboot
 
 import (
+	"context"
+	"errors"
 	"fmt"
+)
+
+var (
+	ErrReencryptionNotActive = errors.New("not active")
 )
 
 type ReencryptionStatus int
@@ -60,4 +66,18 @@ type Reencryption interface {
 	Status() (*ReencryptionStatus, error)
 	Initialize(unlockKeys map[string][]byte) error
 	Resume(unlockKey []byte) (<-chan ReencryptionProgressEvent, error)
+}
+
+func FindActiveVolumeForReencryption(ctx context.Context, activeName string) (Reencryption, error) {
+	for name, backend := range storageContainerHandlers {
+		reencrypt, err := backend.NewOnlineReencryption(ctx, activeName)
+		if err != nil {
+			return nil, fmt.Errorf("cannot probe %q backend for active name %q: %w", name, activeName, err)
+		}
+		if reencrypt != nil {
+			return reencrypt, nil
+		}
+	}
+
+	return nil, ErrReencryptionNotActive
 }

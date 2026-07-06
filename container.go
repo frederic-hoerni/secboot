@@ -119,9 +119,6 @@ type StorageContainer interface {
 	// time (and the backend should only permit one StorageContainerReadWriter
 	// to be open at a time).
 	OpenRead(ctx context.Context) (StorageContainerReader, error)
-
-	// Reencryption returns a handler for reencryption operations
-	NewReencryption(ctx context.Context) Reencryption
 }
 
 // FindStorageContainer returns a StorageContainer associated with the specified

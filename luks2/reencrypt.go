@@ -6,33 +6,44 @@ import (
 	"fmt"
 	"github.com/snapcore/secboot"
 	luks2 "github.com/snapcore/secboot/internal/luks2"
-	"github.com/snapcore/secboot/internal/luksview"
+	//"github.com/snapcore/secboot/internal/luksview"
 	"io"
 	"os/exec"
 )
 
 // reencryptionImpl is an implementation of [secboot.Reencryption].
 type reencryptionImpl struct {
-	backendPath  string
+	sourcePath   string
 	dmActiveName string
 	ctx          context.Context
 }
 
 func (r reencryptionImpl) Status() (*secboot.ReencryptionStatus, error) {
-	view, err := luksview.NewView(r.ctx, r.backendPath)
+	status, err := luks2.ReadCryptsetupStatus(r.ctx, r.dmActiveName)
+	//view, err := luksview.NewView(r.ctx, r.sourcePath)
+	//if err != nil {
+	//	return nil, fmt.Errorf("cannot obtain LUKS header view: %w", err)
+	//}
+	//nReencrypt := view.HasReencrypt()
+	//if nReencrypt > 0 {
+	//	var status secboot.ReencryptionStatus = secboot.ReencryptionStatusInitialized
+	//	return &status, nil
+	//	// TODO distinguish in-progress / interrupted?
+	//	//return secboot.ReencryptionStatusInterrupted, nil
+	//} else {
+	//	var status secboot.ReencryptionStatus = secboot.ReencryptionStatusNone
+	//	return &status, nil
+	//}
 	if err != nil {
-		return nil, fmt.Errorf("cannot obtain LUKS header view: %w", err)
+		return nil, fmt.Errorf("Cannot get reencryption status: %w", err)
 	}
-	nReencrypt := view.HasReencrypt()
-	if nReencrypt > 0 {
-		var status secboot.ReencryptionStatus = secboot.ReencryptionStatusInitialized
-		return &status, nil
-		// TODO distinguish in-progress / interrupted?
-		//return secboot.ReencryptionStatusInterrupted, nil
+	var reencStatus secboot.ReencryptionStatus
+	if status.Reencryption == "in-progress" {
+		reencStatus = secboot.ReencryptionStatusInitialized
 	} else {
-		var status secboot.ReencryptionStatus = secboot.ReencryptionStatusNone
-		return &status, nil
+		reencStatus = secboot.ReencryptionStatusNone
 	}
+	return &reencStatus, nil
 }
 
 func (r reencryptionImpl) Initialize(unlockKeys map[string][]byte) error {

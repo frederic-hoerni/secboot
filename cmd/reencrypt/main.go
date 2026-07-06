@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-const Usage = `usage: reencrypt [options] DISK
+const Usage = `usage: reencrypt [options] ACTIVE-NAME
 
 Reencrypt an active encrypted container.
 
@@ -18,9 +18,10 @@ Options:
     --resume      Only resume reencryption
 
 Examples:
-    reencrypt --status /dev/sda3
-    reencrypt --initialize /dev/sda3
-    reencrypt --resume /dev/sda3
+    cryptsetup open /dev/vda5 crypt01
+    reencrypt --status crypt01
+    reencrypt --initialize crypt01
+    reencrypt --resume crypt01
 `
 
 func main() {
@@ -62,35 +63,35 @@ func main() {
 	}
 }
 
-func reencrypt(devicePath string) error {
+func reencrypt(activeName string) error {
 
-	err := status(devicePath)
+	err := status(activeName)
 	if err != nil {
-		fmt.Printf("Cannot get status of %v: %v\n", devicePath, err)
+		fmt.Printf("Cannot get status of %v: %v\n", activeName, err)
 		return err
 	}
 
-	err = initialize(devicePath)
+	err = initialize(activeName)
 	if err != nil {
-		fmt.Printf("Cannot initialize reencryption of %v: %v\n", devicePath, err)
+		fmt.Printf("Cannot initialize reencryption of %v: %v\n", activeName, err)
 		return err
 	}
 
-	err = resume(devicePath)
+	err = resume(activeName)
 	if err != nil {
-		fmt.Printf("Cannot resume reencryption of %v: %v\n", devicePath, err)
+		fmt.Printf("Cannot resume reencryption of %v: %v\n", activeName, err)
 		return err
 	}
 	return nil
 }
 
-func status(devicePath string) error {
-	container, err := secboot.FindStorageContainer(context.Background(), devicePath)
+func status(activeName string) error {
+	reencryption, err := secboot.FindActiveVolumeForReencryption(context.Background(), activeName)
 	if err != nil {
-		fmt.Printf("Cannot find storage (LUKS) container: %v\n", err)
+		fmt.Printf("Cannot find active volume: %v\n", err)
 		return err
 	}
-	reencryption := container.NewReencryption(context.Background())
+
 	status, err := reencryption.Status()
 	if err != nil {
 		return fmt.Errorf("Cannot get reencryption status: %w", err)
@@ -99,13 +100,12 @@ func status(devicePath string) error {
 	return nil
 }
 
-func initialize(devicePath string) error {
-	container, err := secboot.FindStorageContainer(context.Background(), devicePath)
+func initialize(activeName string) error {
+	reencryption, err := secboot.FindActiveVolumeForReencryption(context.Background(), activeName)
 	if err != nil {
-		fmt.Printf("Cannot find storage (LUKS) container: %v\n", err)
+		fmt.Printf("Cannot find active volume: %v\n", err)
 		return err
 	}
-	reencryption := container.NewReencryption(context.Background())
 
 	unlockKeys := make(map[string][]byte)
 	unlockKeys["1"] = []byte("0000")
@@ -117,21 +117,23 @@ func initialize(devicePath string) error {
 	return nil
 }
 
-func resume(devicePath string) error {
-	container, err := secboot.FindStorageContainer(context.Background(), devicePath)
+func resume(activeName string) error {
+	reencryption, err := secboot.FindActiveVolumeForReencryption(context.Background(), activeName)
 	if err != nil {
-		fmt.Printf("Cannot find storage (LUKS) container: %v\n", err)
+		fmt.Printf("Cannot find active volume: %v\n", err)
 		return err
 	}
-	reencryption := container.NewReencryption(context.Background())
 
 	reencProgressChannel, err := reencryption.Resume([]byte("0000"))
 	if err != nil {
 		return fmt.Errorf("cannot resume: %w", err)
 	}
 
+	i := 0
+
 	for msg := range reencProgressChannel {
-		fmt.Println("xfh: msg=", msg)
+		fmt.Println("xfh: i=", i, "msg=", msg)
+		i++
 		switch msg.Type {
 		case secboot.ReencryptionProgressCompleted:
 			return nil
