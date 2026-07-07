@@ -13,17 +13,17 @@ var (
 type ReencryptionStatus int
 
 const (
-	ReencryptionStatusNone = iota
+	ReencryptionStatusNone ReencryptionStatus = iota
 	ReencryptionStatusInitialized
 )
 
 type ReencryptionProgressEventType int
 
 const (
-	ReencryptionProgressStarted   = iota
-	ReencryptionProgressRunning   = iota
-	ReencryptionProgressCompleted = iota
-	ReencryptionProgressError     = iota
+	ReencryptionProgressStarted ReencryptionProgressEventType = iota
+	ReencryptionProgressRunning
+	ReencryptionProgressCompleted
+	ReencryptionProgressError
 )
 
 func (r ReencryptionStatus) String() string {
