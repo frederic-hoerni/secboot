@@ -33,5 +33,13 @@ check-efi-preinstall: check-efi-preinstall.bin check-tpm2-simulator
 	#     go tool cover -func=coverage.out
 	# or: go tool cover -html=coverage.out
 
+check-efi.bin: FORCE
+	go test -cover -c -o $@ $(GCFLAGS) ./efi -v -ldflags '-X github.com/snapcore/secboot/internal/testenv.testBinary=enabled' -race -p 1
+
+check-efi: check-efi.bin check-tpm2-simulator
+	@# cd to efi/. as testdata is expected in .
+	cd efi && ../$< -test.coverprofile=coverage.out -check.v
+
+
 list-packages:
 	go list ./...
