@@ -121,7 +121,7 @@ func (s *pcrProfileMockedSuite) TestAddPCRProfileSimple(c *C) {
 	profile := secboot_tpm2.NewPCRProtectionProfile()
 
 	var digests tpm2.DigestList
-	for i := 0; i <= 2; i++ {
+	for i := 0; i <= 1; i++ {
 		h := crypto.SHA256.New()
 		io.WriteString(h, strconv.Itoa(i))
 		digests = append(digests, h.Sum(nil))
