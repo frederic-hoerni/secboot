@@ -33,9 +33,10 @@ import (
 )
 
 const (
-	sbStateName              = "SecureBoot"                  // Unicode variable name for the EFI secure boot configuration (enabled/disabled)
-	dmaProtectionDisabled    = "DMA Protection Disabled"     // ASCII string measured to PCR7 if DMA remapping is disabled in the pre-OS environment
-	dmaProtectionDisabledNul = "DMA Protection Disabled\x00" // TCG PC Client Profile spec says no NUL-terminator, but some firmware is buggy
+	sbStateName              = "SecureBoot"                        // Unicode variable name for the EFI secure boot configuration (enabled/disabled)
+	dmaProtectionDisabled    = "DMA Protection Disabled"           // ASCII string measured to PCR7 if DMA remapping is disabled in the pre-OS environment
+	dmaProtectionDisabledNul = "DMA Protection Disabled\x00"       // TCG PC Client Profile spec says no NUL-terminator, but some firmware is buggy
+	securityLevelDowngraded  = "Security Level is Downgraded to 0" // ASCII string measured to PCR7 in the pre-OS
 )
 
 // fwLoadHandler is an implementation of imageLoadHandler that measures firmware
@@ -136,6 +137,15 @@ func (h *fwLoadHandler) measureSecureBootPolicyPreOS(ctx pcrBranchContext) error
 	// is set to true, this branch should be a branch that includes the corresponding
 	// EV_EFI_ACTION event in the profile if it is present.
 	includeInsufficientDMAProtection := boolParamOrFalse(ctx.Params(), includeInsufficientDMAProtectionParamKey)
+
+	// allowSecurityLevelDowngraded indicates that we should permit generating profiles
+	// that are compatible with PCR7 even if there is an event SecurityLevelDowngraded.
+	allowSecurityLevelDowngraded := boolParamOrFalse(ctx.Params(), allowSecurityLevelDowngradedParamKey)
+
+	// includeSecurityLevelDowngraded indicates that where allowSecurityLevelDowngraded
+	// is set to true, this branch should be a branch that includes the corresponding
+	// EV_EFI_ACTION event in the profile if it is present.
+	includeSecurityLevelDowngraded := boolParamOrFalse(ctx.Params(), includeSecurityLevelDowngradedParamKey)
 
 	// Wind the log forward to the first EV_EFI_VARIABLE_DRIVER_CONFIG event, including
 	// any EV_EFI_ACTION "DMA Protection Disabled" measurement before this in the target
@@ -302,6 +312,23 @@ func (h *fwLoadHandler) measureSecureBootPolicyPreOS(ctx pcrBranchContext) error
 				ctx.ExtendPCR(internal_efi.SecureBootPolicyPCR, e.Digests[ctx.PCRAlg()])
 			}
 			allowInsufficientDMAProtection = false // Only allow this event to appear once
+		case e.PCRIndex == internal_efi.SecureBootPolicyPCR && e.EventType == tcglog.EventTypeEFIAction &&
+			bytes.Equal(e.Data.Bytes(), []byte(securityLevelDowngraded)) &&
+			allowSecurityLevelDowngraded:
+			// This is a EV_EFI_ACTION "Security Level is Downgraded to 0" measurement and is
+			// allowed to appear in PCR7. In this case, it is after the secure
+			// boot configuration measurements, and after the separator.
+			//
+			// Now we use the includeSecurityLevelDowngraded flag to determine if
+			// this run of fwLoadHandler should really measure it to this profile
+			// branch as well. Including a branch in the profile that skips this
+			// measurement makes it possible for the firmware setting to be corrected [TODO check this]
+			// without invalidating the profile, which would require a recovery key.
+			// Future runs can then drop the option to permit it.
+			if includeSecurityLevelDowngraded {
+				ctx.ExtendPCR(internal_efi.SecureBootPolicyPCR, e.Digests[ctx.PCRAlg()])
+			}
+			allowSecurityLevelDowngraded = false // Only allow this event to appear once
 		case e.PCRIndex == internal_efi.SecureBootPolicyPCR && internal_efi.IsVendorEventType(e.EventType):
 			ctx.ExtendPCR(internal_efi.SecureBootPolicyPCR, e.Digests[ctx.PCRAlg()])
 		case e.PCRIndex == internal_efi.SecureBootPolicyPCR:

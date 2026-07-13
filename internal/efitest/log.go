@@ -153,6 +153,27 @@ func maybeMeasureDMAProtectionDisabledEvent(c *C, builder *logBuilder, opts *Log
 		data:      data})
 }
 
+func maybeMeasureSecurityLevelDowngradedEvent(c *C, builder *logBuilder, opts *LogOptions) {
+	if opts.SecurityLevelDowngraded&SecurityLevelDowngraded > 0 {
+		var data tcglog.EventData
+		data = tcglog.StringEventData("Security Level is Downgraded to 0")
+		builder.hashLogExtendEvent(c, data, &logEvent{
+			pcrIndex:  7,
+			eventType: tcglog.EventTypeEFIAction,
+			data:      data})
+	}
+}
+
+// SecurityLevelDowngradedEventFlags specifies whether there should be a EV_EFI_ACTION
+// "Security Level is Downgraded to 0" event in PCR7.
+type SecurityLevelDowngradedEventFlags int
+
+const (
+	// SecurityLevelDowngraded indicates that a EV_EFI_ACTION event should be included,
+	// as it would be on systems with a "Security Level is Downgraded to 0" event.
+	SecurityLevelDowngraded SecurityLevelDowngradedEventFlags = 1 << iota
+)
+
 // SecureBootSeparatorOrder specifies when the EV_SEPARATOR event in PCR7
 // should be emitted.
 type SecureBootSeparatorOrder int
@@ -166,19 +187,20 @@ const (
 type LogOptions struct {
 	Algorithms []tpm2.HashAlgorithmId // the digest algorithms to include
 
-	StartupLocality                   uint8                           // specify a startup locality other than 0
-	FirmwareDebugger                  bool                            // indicate a firmware debugger endpoint is enabled
-	DMAProtection                     DMAProtectionDisabledEventFlags // whether DMA protection is disabled
-	SecureBootDisabled                bool                            // Whether secure boot is disabled
-	SecureBootSeparatorOrder          SecureBootSeparatorOrder        // when to emit the EV_SEPARATOR event for PCR7
-	IncludeDriverLaunch               bool                            // include a driver launch from a PCI device in the log
-	IncludeSysPrepAppLaunch           bool                            // include a system-preparation app launch in the log
-	IncludePreOSFirmwareAppLaunch     efi.GUID                        // include a flash based application launch in the log as part of the pre-OS phase
-	NoCallingEFIApplicationEvent      bool                            // omit the EV_EFI_ACTION "Calling EFI Application from Boot Option" event.
-	IncludeOSPresentFirmwareAppLaunch efi.GUID                        // include a flash based application launch in the log as part of the OS-present phase
-	NoSBAT                            bool                            // omit the SbatLevel measurement to mimic older versions of shim
-	PreOSVerificationUsesDigests      crypto.Hash                     // Whether Driver or SysPrep launches are verified using a digest
-	DisableDeployedMode               bool                            // Whether deployed/audit modes are disabled and we have UEFI 2.5
+	StartupLocality                   uint8                             // specify a startup locality other than 0
+	FirmwareDebugger                  bool                              // indicate a firmware debugger endpoint is enabled
+	DMAProtection                     DMAProtectionDisabledEventFlags   // whether DMA protection is disabled
+	SecurityLevelDowngraded           SecurityLevelDowngradedEventFlags // whether security level is downgraded
+	SecureBootDisabled                bool                              // Whether secure boot is disabled
+	SecureBootSeparatorOrder          SecureBootSeparatorOrder          // when to emit the EV_SEPARATOR event for PCR7
+	IncludeDriverLaunch               bool                              // include a driver launch from a PCI device in the log
+	IncludeSysPrepAppLaunch           bool                              // include a system-preparation app launch in the log
+	IncludePreOSFirmwareAppLaunch     efi.GUID                          // include a flash based application launch in the log as part of the pre-OS phase
+	NoCallingEFIApplicationEvent      bool                              // omit the EV_EFI_ACTION "Calling EFI Application from Boot Option" event.
+	IncludeOSPresentFirmwareAppLaunch efi.GUID                          // include a flash based application launch in the log as part of the OS-present phase
+	NoSBAT                            bool                              // omit the SbatLevel measurement to mimic older versions of shim
+	PreOSVerificationUsesDigests      crypto.Hash                       // Whether Driver or SysPrep launches are verified using a digest
+	DisableDeployedMode               bool                              // Whether deployed/audit modes are disabled and we have UEFI 2.5
 }
 
 // NewLog creates a mock TCG log for testing. The log will look like a standard
@@ -402,6 +424,7 @@ func NewLog(c *C, opts *LogOptions) *tcglog.Log {
 			eventType: tcglog.EventTypeSeparator,
 			data:      data})
 		maybeMeasureDMAProtectionDisabledEvent(c, builder, opts, DMAProtectionDisabledEventOrderAfterSeparator)
+		maybeMeasureSecurityLevelDowngradedEvent(c, builder, opts)
 	}
 
 	// Mock EFI driver launch
