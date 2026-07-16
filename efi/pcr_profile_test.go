@@ -28,8 +28,8 @@ import (
 
 	efi "github.com/canonical/go-efilib"
 	"github.com/canonical/go-tpm2"
+	"github.com/canonical/go-tpm2/policyutil"
 	tpm2_testutil "github.com/canonical/go-tpm2/testutil"
-	"github.com/canonical/go-tpm2/util"
 	"github.com/canonical/tcglog-parser"
 	. "gopkg.in/check.v1"
 
@@ -633,7 +633,7 @@ func (s *pcrProfileSuite) testAddPCRProfile(c *C, data *testAddPCRProfileData, o
 	var expectedPcrs tpm2.PCRSelectionList
 	var expectedDigests tpm2.DigestList
 	for i, v := range data.expected {
-		pcrs, digest, err := util.ComputePCRDigestFromAllValues(tpm2.HashAlgorithmSHA256, v)
+		pcrs, digest, err := policyutil.ComputePCRDigestFromAllValues(tpm2.HashAlgorithmSHA256, v)
 		c.Assert(err, IsNil)
 		if i == 0 {
 			expectedPcrs = pcrs
