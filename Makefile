@@ -3,6 +3,7 @@ help:
 	# make build                  Build companion tools
 	# make check                  Run all tests
 	# make check-efi-preinstall   Run tests of package efi/preinstall
+	# make check-efi              Run tests of package efi
 	# make list-packages          List Go packages
 
 
