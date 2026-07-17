@@ -1378,7 +1378,7 @@ func (s *pcrProfileSuite) TestAddPCRProfileUC20WithDbxUpdateWithAllowInsufficien
 	c.Check(err, IsNil)
 }
 
-func (s *pcrProfileSuite) TestAddPCRProfileUC20WithWithAllowSecurityLevelDowngraded(c *C) {
+func (s *pcrProfileSuite) TestAddPCRProfileUC20WithWithAllowThunderboltSecurityLevel0(c *C) {
 	// Test with a standard UC20 profile without recovery kernel
 	shim := newMockUbuntuShimImage15_7(c)
 	grub := newMockUbuntuGrubImage3(c)
@@ -1387,8 +1387,8 @@ func (s *pcrProfileSuite) TestAddPCRProfileUC20WithWithAllowSecurityLevelDowngra
 	err := s.testAddPCRProfile(c, &testAddPCRProfileData{
 		vars: makeMockVars(c, withMsSecureBootConfig(), withSbatLevel([]byte("sbat,1,2022052400\ngrub,2\n"))),
 		log: efitest.NewLog(c, &efitest.LogOptions{
-			Algorithms:              []tpm2.HashAlgorithmId{tpm2.HashAlgorithmSHA256, tpm2.HashAlgorithmSHA1},
-			SecurityLevelDowngraded: efitest.SecurityLevelDowngraded,
+			Algorithms:                []tpm2.HashAlgorithmId{tpm2.HashAlgorithmSHA256, tpm2.HashAlgorithmSHA1},
+			ThunderboltSecurityLevel0: efitest.ThunderboltSecurityLevel0,
 		}),
 		alg: tpm2.HashAlgorithmSHA256,
 		loadSequences: NewImageLoadSequences(
@@ -1426,7 +1426,7 @@ func (s *pcrProfileSuite) TestAddPCRProfileUC20WithWithAllowSecurityLevelDowngra
 				},
 			},
 		},
-	}, WithSecureBootPolicyProfile(), WithBootManagerCodeProfile(), WithKernelConfigProfile(), WithAllowSecurityLevelDowngraded())
+	}, WithSecureBootPolicyProfile(), WithBootManagerCodeProfile(), WithKernelConfigProfile(), WithAllowThunderboltSecurityLevel0())
 	c.Check(err, IsNil)
 }
 

@@ -24,20 +24,20 @@ import (
 )
 
 const (
-	// allowSecurityLevelDowngradedParamKey is used to allow for the "Security Level is Downgraded to 0"
+	// allowThunderboltSecurityLevel0ParamKey is used to allow for the "Security Level is Downgraded to 0"
 	// string in PCR7.
-	allowSecurityLevelDowngradedParamKey loadParamsKey = "allow_security_level_downgraded"
+	allowThunderboltSecurityLevel0ParamKey loadParamsKey = "allow_security_level_downgraded"
 
-	// includeSecurityLevelDowngradedParamKey is used to signal whether the "Security Level is Downgraded to 0"
+	// includeThunderboltSecurityLevel0ParamKey is used to signal whether the "Security Level is Downgraded to 0"
 	// string should be reflected in the produced PCR profile.
-	// this is ignored if allowSecurityLevelDowngraded is false, as the presence of the event
+	// this is ignored if allowThunderboltSecurityLevel0 is false, as the presence of the event
 	// will lead to an error in that case.
-	includeSecurityLevelDowngradedParamKey = "include_security_level_downgraded"
+	includeThunderboltSecurityLevel0ParamKey = "include_security_level_downgraded"
 )
 
-type allowSecurityLevelDowngradedOption struct{}
+type allowThunderboltSecurityLevel0Option struct{}
 
-func (o allowSecurityLevelDowngradedOption) ApplyOptionTo(visitor internal_efi.PCRProfileOptionVisitor) error {
+func (o allowThunderboltSecurityLevel0Option) ApplyOptionTo(visitor internal_efi.PCRProfileOptionVisitor) error {
 	visitor.AddImageLoadParams(func(params ...loadParams) []loadParams {
 		var out []loadParams
 		for _, v := range []bool{false, true} {
@@ -46,8 +46,8 @@ func (o allowSecurityLevelDowngradedOption) ApplyOptionTo(visitor internal_efi.P
 				newParams = append(newParams, p.Clone())
 			}
 			for _, p := range newParams {
-				p[allowSecurityLevelDowngradedParamKey] = true
-				p[includeSecurityLevelDowngradedParamKey] = v
+				p[allowThunderboltSecurityLevel0ParamKey] = true
+				p[includeThunderboltSecurityLevel0ParamKey] = v
 			}
 			out = append(out, newParams...)
 		}
@@ -56,12 +56,12 @@ func (o allowSecurityLevelDowngradedOption) ApplyOptionTo(visitor internal_efi.P
 	return nil
 }
 
-// WithAllowSecurityLevelDowngraded can be supplied to AddPCRProfile to allow for
+// WithAllowThunderboltSecurityLevel0 can be supplied to AddPCRProfile to allow for
 // PCR7 including the "Security Level is Downgraded to 0" event. While this reduces security,
 // it is required on some devices.
 // If this string is present in the event log, this option results in a creation of a
 // branched PCR profile that has two branches at the Firmware load stage one including
 // the event with the string, the another not.
-func WithAllowSecurityLevelDowngraded() PCRProfileOption {
-	return allowSecurityLevelDowngradedOption{}
+func WithAllowThunderboltSecurityLevel0() PCRProfileOption {
+	return allowThunderboltSecurityLevel0Option{}
 }
