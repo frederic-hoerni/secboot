@@ -1378,7 +1378,7 @@ func (s *pcrProfileSuite) TestAddPCRProfileUC20WithDbxUpdateWithAllowInsufficien
 	c.Check(err, IsNil)
 }
 
-func (s *pcrProfileSuite) TestAddPCRProfileUC20WithWithAllowThunderboltSecurityLevel0(c *C) {
+func (s *pcrProfileSuite) TestAddPCRProfileUC20WithAllowThunderboltSecurityLevel0(c *C) {
 	// Test with a standard UC20 profile without recovery kernel
 	shim := newMockUbuntuShimImage15_7(c)
 	grub := newMockUbuntuGrubImage3(c)
@@ -1428,6 +1428,20 @@ func (s *pcrProfileSuite) TestAddPCRProfileUC20WithWithAllowThunderboltSecurityL
 		},
 	}, WithSecureBootPolicyProfile(), WithBootManagerCodeProfile(), WithKernelConfigProfile(), WithAllowThunderboltSecurityLevel0())
 	c.Check(err, IsNil)
+}
+
+func (s *pcrProfileSuite) TestAddPCRProfileThunderboltSecurityLevel0(c *C) {
+        // Test with an unexpected ThunderboltSecurityLevel0 event
+	err := s.testAddPCRProfile(c, &testAddPCRProfileData{
+		vars: makeMockVars(c, withMsSecureBootConfig(), withSbatLevel([]byte("sbat,1,2022052400\ngrub,2\n"))),
+		log: efitest.NewLog(c, &efitest.LogOptions{
+			Algorithms:                []tpm2.HashAlgorithmId{tpm2.HashAlgorithmSHA256, tpm2.HashAlgorithmSHA1},
+			ThunderboltSecurityLevel0: efitest.ThunderboltSecurityLevel0,
+		}),
+		alg:           tpm2.HashAlgorithmSHA256,
+		loadSequences: NewImageLoadSequences(),
+	}, WithSecureBootPolicyProfile(), WithBootManagerCodeProfile(), WithKernelConfigProfile())
+	c.Check(err, ErrorMatches, `cannot measure pre-OS: cannot measure secure boot policy: unexpected event type \(EV_EFI_ACTION\) found in log`)
 }
 
 func (s *pcrProfileSuite) TestAddPCRProfileUC20WithAllowSecureBootUserMode(c *C) {

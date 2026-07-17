@@ -322,8 +322,8 @@ func (h *fwLoadHandler) measureSecureBootPolicyPreOS(ctx pcrBranchContext) error
 			// Now we use the includeThunderboltSecurityLevel0 flag to determine if
 			// this run of fwLoadHandler should really measure it to this profile
 			// branch as well. Including a branch in the profile that skips this
-			// measurement makes it possible for the firmware setting to be corrected [TODO check this]
-			// without invalidating the profile, which would require a recovery key.
+			// measurement makes it possible for the firmware setting to be corrected
+			// without invalidating the profile.
 			// Future runs can then drop the option to permit it.
 			if includeThunderboltSecurityLevel0 {
 				ctx.ExtendPCR(internal_efi.SecureBootPolicyPCR, e.Digests[ctx.PCRAlg()])

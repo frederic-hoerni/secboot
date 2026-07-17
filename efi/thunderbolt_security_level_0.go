@@ -26,13 +26,13 @@ import (
 const (
 	// allowThunderboltSecurityLevel0ParamKey is used to allow for the "Security Level is Downgraded to 0"
 	// string in PCR7.
-	allowThunderboltSecurityLevel0ParamKey loadParamsKey = "allow_security_level_downgraded"
+	allowThunderboltSecurityLevel0ParamKey loadParamsKey = "allow_thunderbolt_security_level_0"
 
 	// includeThunderboltSecurityLevel0ParamKey is used to signal whether the "Security Level is Downgraded to 0"
 	// string should be reflected in the produced PCR profile.
 	// this is ignored if allowThunderboltSecurityLevel0 is false, as the presence of the event
 	// will lead to an error in that case.
-	includeThunderboltSecurityLevel0ParamKey = "include_security_level_downgraded"
+	includeThunderboltSecurityLevel0ParamKey = "include_thunderbolt_security_level_0"
 )
 
 type allowThunderboltSecurityLevel0Option struct{}
@@ -62,6 +62,18 @@ func (o allowThunderboltSecurityLevel0Option) ApplyOptionTo(visitor internal_efi
 // If this string is present in the event log, this option results in a creation of a
 // branched PCR profile that has two branches at the Firmware load stage one including
 // the event with the string, the another not.
+//
+// Rationale and context:
+// Some old (2021) BIOS firmware on NUC8v5PNB devices measure an event of type EV_EFI_ACTION
+// saying "Security Level is Downgraded to 0" to PCR7.
+// By default this event makes secboot raise an error when computing the PCR policy, and this
+// is relevant as this event denotes a situation where the platform may have a security issue.
+// Moreover, the user who reported this issue said that this could be fixed either by
+// configuring the BIOS to the most secure option for Thunderbolt, or by updating the firmware.
+// This event should therefore not be allowed by default.
+//
+// That being said, there may be situations where users have this event and still want to use
+// TPM-backed disk encryption. This is why we provide this option.
 func WithAllowThunderboltSecurityLevel0() PCRProfileOption {
 	return allowThunderboltSecurityLevel0Option{}
 }
