@@ -11,9 +11,10 @@ help:
 FORCE:
 
 # Build command line programs
-build:
-	go build -o test_efi_fde_compat cmd/test_efi_fde_compat/main.go
-	go build -o run_argon2 cmd/run_argon2/main.go
+build: test_efi_fde_compat run_argon2 pcr-profile
+
+%: cmd/%/main.go FORCE
+	go build -o $@ $<
 
 # Disable optimization and inlining (to facilitate step-by-step debugging)
 GCFLAGS = -gcflags "-N -l"
