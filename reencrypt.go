@@ -64,13 +64,13 @@ type ReencryptionProgressEvent struct {
 
 type Reencryption interface {
 	Status() (*ReencryptionStatus, error)
-	Initialize(unlockKeys map[string][]byte) error
-	Resume(unlockKey []byte) (<-chan ReencryptionProgressEvent, error)
+	Initialize(ctx context.Context, unlockKeys map[string][]byte) error
+	Resume(ctx context.Context, unlockKey []byte) (<-chan ReencryptionProgressEvent, error)
 }
 
-func FindActiveVolumeForReencryption(ctx context.Context, activeName string) (Reencryption, error) {
+func ReencryptionForActiveVolume(activeName string) (Reencryption, error) {
 	for name, backend := range storageContainerHandlers {
-		reencrypt, err := backend.NewOnlineReencryption(ctx, activeName)
+		reencrypt, err := backend.NewOnlineReencryption(activeName)
 		if err != nil {
 			return nil, fmt.Errorf("cannot probe %q backend for active name %q: %w", name, activeName, err)
 		}

@@ -86,7 +86,7 @@ func reencrypt(activeName string) error {
 }
 
 func status(activeName string) error {
-	reencryption, err := secboot.FindActiveVolumeForReencryption(context.Background(), activeName)
+	reencryption, err := secboot.ReencryptionForActiveVolume(activeName)
 	if err != nil {
 		fmt.Printf("Cannot find active volume: %v\n", err)
 		return err
@@ -101,7 +101,7 @@ func status(activeName string) error {
 }
 
 func initialize(activeName string) error {
-	reencryption, err := secboot.FindActiveVolumeForReencryption(context.Background(), activeName)
+	reencryption, err := secboot.ReencryptionForActiveVolume(activeName)
 	if err != nil {
 		fmt.Printf("Cannot find active volume: %v\n", err)
 		return err
@@ -109,7 +109,7 @@ func initialize(activeName string) error {
 
 	unlockKeys := make(map[string][]byte)
 	unlockKeys["1"] = []byte("0000")
-	err = reencryption.Initialize(unlockKeys)
+	err = reencryption.Initialize(context.Background(), unlockKeys)
 	if err != nil {
 		return fmt.Errorf("cannot initialize: %w", err)
 	}
@@ -118,13 +118,13 @@ func initialize(activeName string) error {
 }
 
 func resume(activeName string) error {
-	reencryption, err := secboot.FindActiveVolumeForReencryption(context.Background(), activeName)
+	reencryption, err := secboot.ReencryptionForActiveVolume(activeName)
 	if err != nil {
 		fmt.Printf("Cannot find active volume: %v\n", err)
 		return err
 	}
 
-	reencProgressChannel, err := reencryption.Resume([]byte("0000"))
+	reencProgressChannel, err := reencryption.Resume(context.Background(), []byte("0000"))
 	if err != nil {
 		return fmt.Errorf("cannot resume: %w", err)
 	}

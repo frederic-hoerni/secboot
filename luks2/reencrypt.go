@@ -19,7 +19,7 @@ type reencryptionImpl struct {
 }
 
 func (r reencryptionImpl) Status() (*secboot.ReencryptionStatus, error) {
-	status, err := luks2.ReadCryptsetupStatus(r.ctx, r.dmActiveName)
+	status, err := luks2.ReadCryptsetupStatus(r.dmActiveName)
 	//view, err := luksview.NewView(r.ctx, r.sourcePath)
 	//if err != nil {
 	//	return nil, fmt.Errorf("cannot obtain LUKS header view: %w", err)
@@ -46,13 +46,13 @@ func (r reencryptionImpl) Status() (*secboot.ReencryptionStatus, error) {
 	return &reencStatus, nil
 }
 
-func (r reencryptionImpl) Initialize(unlockKeys map[string][]byte) error {
+func (r reencryptionImpl) Initialize(ctx context.Context, unlockKeys map[string][]byte) error {
 	var unlockKeysOrdered [][]byte
 	// TODO: keys must be sorted by their keyslot index
 	for _, unlockKey := range unlockKeys {
 		unlockKeysOrdered = append(unlockKeysOrdered, unlockKey)
 	}
-	return luks2.ReencryptInitialize(r.dmActiveName, unlockKeysOrdered)
+	return luks2.ReencryptInitialize(ctx, r.dmActiveName, unlockKeysOrdered)
 }
 
 func superviseReencryption(cmd *exec.Cmd, stdoutPipe io.ReadCloser, stderrPipe io.ReadCloser, outChan chan<- secboot.ReencryptionProgressEvent) {
@@ -89,10 +89,10 @@ func superviseReencryption(cmd *exec.Cmd, stdoutPipe io.ReadCloser, stderrPipe i
 	}
 }
 
-func (r reencryptionImpl) Resume(unlockKey []byte) (<-chan secboot.ReencryptionProgressEvent, error) {
+func (r reencryptionImpl) Resume(ctx context.Context, unlockKey []byte) (<-chan secboot.ReencryptionProgressEvent, error) {
 	outChan := make(chan secboot.ReencryptionProgressEvent)
 
-	cmd, stdout, stderr, err := luks2.ReencryptResume(r.ctx, r.dmActiveName, unlockKey)
+	cmd, stdout, stderr, err := luks2.ReencryptResume(ctx, r.dmActiveName, unlockKey)
 	if err != nil {
 		return nil, err
 	}

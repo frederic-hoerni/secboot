@@ -99,6 +99,17 @@ func cryptsetupCmd(stdin io.Reader, args ...string) error {
 	return nil
 }
 
+func cryptsetupCmdContext(ctx context.Context, stdin io.Reader, args ...string) error {
+	cmd := exec.CommandContext(ctx, "cryptsetup", args...)
+	cmd.Stdin = stdin
+
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("cryptsetup failed with: %v", osutil.OutputErr(output, err))
+	}
+
+	return nil
+}
+
 func cryptsetupCmdAsync(ctx context.Context, stdin io.Reader, args ...string) (*exec.Cmd, io.ReadCloser, io.ReadCloser, error) {
 	cmd := exec.CommandContext(ctx, "cryptsetup", args...)
 	cmd.Stdin = stdin
@@ -539,7 +550,7 @@ func TestContainerKey(devicePath string, key []byte) bool {
 	return cryptsetupCmd(bytes.NewReader(key), "open", "--test-passphrase", "--key-file", "-", devicePath) == nil
 }
 
-func ReencryptInitialize(activeName string, unlockKeys [][]byte) error {
+func ReencryptInitialize(ctx context.Context, activeName string, unlockKeys [][]byte) error {
 	args := []string{
 		"reencrypt",
 		"--type", "luks2",
@@ -556,7 +567,7 @@ func ReencryptInitialize(activeName string, unlockKeys [][]byte) error {
 	}
 	// TODO: only one given now. Use extended cryptsetup version and provide all.
 	cmdInput := bytes.NewReader(allKeys)
-	return cryptsetupCmd(cmdInput, args...)
+	return cryptsetupCmdContext(ctx, cmdInput, args...)
 }
 
 func ReencryptResume(ctx context.Context, activeName string, unlockKey []byte) (*exec.Cmd, io.ReadCloser, io.ReadCloser, error) {
@@ -577,8 +588,8 @@ func ReencryptResume(ctx context.Context, activeName string, unlockKey []byte) (
 	return cryptsetupCmdAsync(ctx, cmdInput, args...)
 }
 
-func ReadCryptsetupStatus(ctx context.Context, activeName string) (*CryptsetupStatus, error) {
-	cmd := exec.CommandContext(ctx, "cryptsetup", "status", activeName)
+func ReadCryptsetupStatus(activeName string) (*CryptsetupStatus, error) {
+	cmd := exec.Command("cryptsetup", "status", activeName)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("cannot get cryptsetup status for %s: %w", activeName, err)
