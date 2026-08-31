@@ -160,11 +160,16 @@ func (b *storageContainerBackend) ProbeActivated(ctx context.Context, path strin
 
 func (b *storageContainerBackend) NewOnlineReencryption(activeName string) (secboot.Reencryption, error) {
 	// Get the source path.
-	// cryptsetup status <activeName>
-	sourcePath := "TODO"
+	status, err := internal_luks2.ReadCryptsetupStatus(activeName)
+	if err != nil {
+		return nil, err
+	}
+	if len(status.Device) == 0 {
+		return nil, fmt.Errorf("cannot get device of active name '%v'", activeName)
+	}
 
 	reencryption := reencryptionImpl{
-		sourcePath:   sourcePath,
+		sourcePath:   status.Device,
 		dmActiveName: activeName,
 	}
 
