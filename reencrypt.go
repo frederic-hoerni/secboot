@@ -53,6 +53,7 @@ func (r ReencryptionProgressEventType) String() string {
 }
 
 type ReencryptionProgressDetails struct {
+	// "device" (which gives the path to the LUKS device) omitted because not relevant here
 	DeviceSize               string `json:"device_size"`
 	BytesReencryptedSoFar    string `json:"device_bytes"`
 	CalculatedSpeed          string `json:"speed"`
@@ -61,9 +62,9 @@ type ReencryptionProgressDetails struct {
 }
 
 type ReencryptionProgressEvent struct {
-	Type     ReencryptionProgressEventType
-	Details  ReencryptionProgressDetails
-	Error    error
+	Type    ReencryptionProgressEventType
+	Details ReencryptionProgressDetails
+	Error   error
 }
 
 type Reencryption interface {

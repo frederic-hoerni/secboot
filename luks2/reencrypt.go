@@ -70,7 +70,7 @@ func decodeReencryptionProgressDetails(bytes []byte) (secboot.ReencryptionProgre
 	var details secboot.ReencryptionProgressDetails
 	err := json.Unmarshal(bytes, &details)
 	if err != nil {
-		return secboot.ReencryptionProgressDetails{}, err
+		return secboot.ReencryptionProgressDetails{}, fmt.Errorf("cannot decode JSON: %w (%v)", err, string(bytes))
 	}
 	return details, nil
 }
