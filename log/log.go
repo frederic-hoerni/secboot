@@ -11,9 +11,9 @@ var logLevelPolicy = -1
 
 // Log levels, partly mapped on syslog log levels
 const (
-	LogLevelErr  = 3 // error conditions
-	LogLevelWarn = 4 // warning conditions
-	LogLevelInfo = 6 // informational message
+	LogLevelErr   = 3 // error conditions
+	LogLevelWarn  = 4 // warning conditions
+	LogLevelInfo  = 6 // informational message
 	LogLevelDebug = 7 //
 )
 
