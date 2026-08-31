@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"strings"
 	"github.com/snapcore/secboot"
 	"github.com/snapcore/secboot/log"
 	_ "github.com/snapcore/secboot/luks2" // This gets the LUKS2 backend initialized
 	"os"
+	"strings"
 )
 
 const Usage = `
@@ -68,7 +68,7 @@ func main() {
 	}
 }
 
-// Split "KEY:VALUE" into "KEY" and "VALUE"
+// splitUnlockKeySpec splits "KEY:VALUE" into "KEY" and "VALUE"
 func splitUnlockKeySpec(s string) (string, string, error) {
 	items := strings.Split(s, ":")
 	if len(items) != 2 {
@@ -77,7 +77,6 @@ func splitUnlockKeySpec(s string) (string, string, error) {
 	return items[0], items[1], nil
 }
 
-//func reencrypt(activeName string, unlockKeysHex []string) error {
 func reencrypt(args ...string) error {
 
 	if len(args) < 2 {
@@ -135,7 +134,7 @@ func status(args ...string) error {
 }
 
 func initialize(args ...string) error {
-	if len(args) < 2  {
+	if len(args) < 2 {
 		return fmt.Errorf("initialize: missing argument")
 	}
 
@@ -173,7 +172,7 @@ func initialize(args ...string) error {
 }
 
 func resume(args ...string) error {
-	if len(args) != 2  {
+	if len(args) != 2 {
 		return fmt.Errorf("initialize: bad argument count")
 	}
 
