@@ -52,14 +52,18 @@ func (r ReencryptionProgressEventType) String() string {
 	}
 }
 
+type ReencryptionProgressDetails struct {
+	DeviceSize               string `json:"device_size"`
+	BytesReencryptedSoFar    string `json:"device_bytes"`
+	CalculatedSpeed          string `json:"speed"`
+	EstimatedTimeRemainingMs string `json:"eta_ms"`
+	TotalTimeSoFarMs         string `json:"time_ms"`
+}
+
 type ReencryptionProgressEvent struct {
-	Type                   ReencryptionProgressEventType
-	BytesReencryptedSoFar  uint64
-	BytesRemaining         uint64
-	CalculatedSpeed        int
-	EstimatedTimeRemaining int
-	TotalTimeSoFar         uint
-	Message                string
+	Type     ReencryptionProgressEventType
+	Details  ReencryptionProgressDetails
+	Error    error
 }
 
 type Reencryption interface {

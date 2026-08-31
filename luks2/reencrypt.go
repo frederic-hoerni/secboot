@@ -3,10 +3,12 @@ package luks2
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/snapcore/secboot"
 	luks2 "github.com/snapcore/secboot/internal/luks2"
 	//"github.com/snapcore/secboot/internal/luksview"
+	"github.com/snapcore/secboot/log"
 	"io"
 	"os/exec"
 )
@@ -49,10 +51,28 @@ func (r reencryptionImpl) Status() (*secboot.ReencryptionStatus, error) {
 func (r reencryptionImpl) Initialize(ctx context.Context, unlockKeys map[string][]byte) error {
 	var unlockKeysOrdered [][]byte
 	// TODO: keys must be sorted by their keyslot index
-	for _, unlockKey := range unlockKeys {
+	for keyslotName, unlockKey := range unlockKeys {
+		log.Debug("Initialize: keyslotName=%v, unlockKey=%v", keyslotName, unlockKey)
 		unlockKeysOrdered = append(unlockKeysOrdered, unlockKey)
 	}
 	return luks2.ReencryptInitialize(ctx, r.dmActiveName, unlockKeysOrdered)
+}
+
+func decodeReencryptionProgressDetails(bytes []byte) (secboot.ReencryptionProgressDetails, error) {
+	//log.Debug("decodeReencryptionProgressDetails: %v", string(bytes))
+	if len(bytes) == 0 {
+		return secboot.ReencryptionProgressDetails{}, fmt.Errorf("empty")
+	}
+	if bytes[0] != '{' {
+		// This is not JSON but probably an error message.
+		return secboot.ReencryptionProgressDetails{}, fmt.Errorf("cryptstup error: %v", string(bytes))
+	}
+	var details secboot.ReencryptionProgressDetails
+	err := json.Unmarshal(bytes, &details)
+	if err != nil {
+		return secboot.ReencryptionProgressDetails{}, err
+	}
+	return details, nil
 }
 
 func superviseReencryption(cmd *exec.Cmd, stdoutPipe io.ReadCloser, stderrPipe io.ReadCloser, outChan chan<- secboot.ReencryptionProgressEvent) {
@@ -62,11 +82,17 @@ func superviseReencryption(cmd *exec.Cmd, stdoutPipe io.ReadCloser, stderrPipe i
 	streamLines := func(pipe io.ReadCloser, outputDone chan<- struct{}) {
 		scanner := bufio.NewScanner(pipe)
 		for scanner.Scan() {
-			outChan <- secboot.ReencryptionProgressEvent{Type: secboot.ReencryptionProgressRunning, Message: scanner.Text()}
+			rawBytes := scanner.Bytes() // should be in JSON format
+			details, err := decodeReencryptionProgressDetails(rawBytes)
+			if err != nil {
+				outChan <- secboot.ReencryptionProgressEvent{Type: secboot.ReencryptionProgressRunning, Error: err}
+			} else {
+				outChan <- secboot.ReencryptionProgressEvent{Type: secboot.ReencryptionProgressRunning, Details: details}
+			}
 		}
 		err := scanner.Err()
 		if err != nil {
-			outChan <- secboot.ReencryptionProgressEvent{Type: secboot.ReencryptionProgressRunning, Message: "scan error:" + err.Error()}
+			outChan <- secboot.ReencryptionProgressEvent{Type: secboot.ReencryptionProgressRunning, Error: err}
 		}
 		outputDone <- struct{}{}
 	}

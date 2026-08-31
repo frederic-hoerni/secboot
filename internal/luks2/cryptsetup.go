@@ -34,6 +34,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/snapcore/secboot/log"
 	"github.com/snapcore/snapd/osutil"
 
 	"golang.org/x/xerrors"
@@ -551,21 +552,27 @@ func TestContainerKey(devicePath string, key []byte) bool {
 }
 
 func ReencryptInitialize(ctx context.Context, activeName string, unlockKeys [][]byte) error {
+	log.Debug("ReencryptInitialize: unlockKeys=%v", unlockKeys)
+	var sizes strings.Builder
+	// Prepare concatenated keys
+	var allKeys []byte
+	for _, unlockKey := range unlockKeys {
+		sizes.WriteString(strconv.Itoa(len(unlockKey)))
+		sizes.WriteString(",")
+		allKeys = append(allKeys, unlockKey...)
+	}
+	log.Debug("ReencryptInitialize: sizes=%v", sizes.String())
+	log.Debug("ReencryptInitialize: keys=%v", allKeys)
+
 	args := []string{
 		"reencrypt",
 		"--type", "luks2",
 		// read existing key from stdin
-		"--key-file", "-",
+		"--keys-from-stdin-sizes", sizes.String(),
 		"--batch-mode",
 		"--init-only",
 		"--active-name", activeName}
 
-	// Provide all keys on the child's stdin (concatenated)
-	var allKeys []byte
-	for _, unlockKey := range unlockKeys {
-		allKeys = append(allKeys, unlockKey...)
-	}
-	// TODO: only one given now. Use extended cryptsetup version and provide all.
 	cmdInput := bytes.NewReader(allKeys)
 	return cryptsetupCmdContext(ctx, cmdInput, args...)
 }
