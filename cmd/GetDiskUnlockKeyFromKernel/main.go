@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"github.com/snapcore/secboot"
+	"os"
 )
 
 func main() {
