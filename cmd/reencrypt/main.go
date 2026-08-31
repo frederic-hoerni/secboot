@@ -8,6 +8,7 @@ import (
 	"github.com/snapcore/secboot/log"
 	_ "github.com/snapcore/secboot/luks2" // This gets the LUKS2 backend initialized
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -46,7 +47,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.SetLogLevel(log.LogLevelInfo)
+	log.SetLogLevel(log.LogLevelDebug)
 
 	args = args[1:] // pop argument zero
 	arg := &args[0]
@@ -149,18 +150,24 @@ func initialize(args ...string) error {
 	}
 
 	unlockKeys := make(map[string][]byte)
+	anonymousKeyslotIndex := 0 // used to assign an index if keyslotName is empty
 	for _, unlockKeySpec := range unlockKeysHex {
 		// split name:hex into a map
-		key, unlockKeyHex, err := splitUnlockKeySpec(unlockKeySpec)
+		keyslotName, unlockKeyHex, err := splitUnlockKeySpec(unlockKeySpec)
 		if err != nil {
 			return err
+		}
+		if len(keyslotName) == 0 {
+			// This is a key with no given keyslot name. Use the index.
+			keyslotName = strconv.Itoa(anonymousKeyslotIndex)
+			anonymousKeyslotIndex++
 		}
 
 		unlockKey, err := hex.DecodeString(unlockKeyHex)
 		if err != nil {
 			return fmt.Errorf("Malformed hex '%v': %w", unlockKeyHex, err)
 		}
-		unlockKeys[key] = unlockKey
+		unlockKeys[keyslotName] = unlockKey
 	}
 
 	err = reencryption.Initialize(context.Background(), unlockKeys)
@@ -199,7 +206,7 @@ func resume(args ...string) error {
 	i := 0
 
 	for msg := range reencProgressChannel {
-		fmt.Println("xfh: i=", i, "msg=", msg)
+		fmt.Println(msg)
 		i++
 		switch msg.Type {
 		case secboot.ReencryptionProgressCompleted:
