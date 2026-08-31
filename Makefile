@@ -13,7 +13,7 @@ GCFLAGS = -gcflags "-N -l"
 FORCE:
 
 # Build command line programs
-build: test_efi_fde_compat run_argon2 reencrypt
+build: test_efi_fde_compat run_argon2 reencrypt GetDiskUnlockKeyFromKernel
 
 %: cmd/%/main.go FORCE
 	go build -o $@ $(GCFLAGS) $<
