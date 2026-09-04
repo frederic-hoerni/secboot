@@ -22,20 +22,6 @@ type reencryptionImpl struct {
 
 func (r reencryptionImpl) Status() (*secboot.ReencryptionStatus, error) {
 	status, err := luks2.ReadCryptsetupStatus(r.dmActiveName)
-	//view, err := luksview.NewView(r.ctx, r.sourcePath)
-	//if err != nil {
-	//	return nil, fmt.Errorf("cannot obtain LUKS header view: %w", err)
-	//}
-	//nReencrypt := view.HasReencrypt()
-	//if nReencrypt > 0 {
-	//	var status secboot.ReencryptionStatus = secboot.ReencryptionStatusInitialized
-	//	return &status, nil
-	//	// TODO distinguish in-progress / interrupted?
-	//	//return secboot.ReencryptionStatusInterrupted, nil
-	//} else {
-	//	var status secboot.ReencryptionStatus = secboot.ReencryptionStatusNone
-	//	return &status, nil
-	//}
 	if err != nil {
 		return nil, fmt.Errorf("Cannot get reencryption status: %w", err)
 	}

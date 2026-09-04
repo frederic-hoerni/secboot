@@ -24,8 +24,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/snapcore/secboot/log"
 	"github.com/snapcore/secboot/internal/luks2"
+	"github.com/snapcore/secboot/log"
 )
 
 type namedTokenData struct {

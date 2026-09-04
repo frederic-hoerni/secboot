@@ -608,7 +608,6 @@ func ReencryptResume(ctx context.Context, activeName string, unlockKey []byte) (
 }
 
 func ReadCryptsetupStatus(activeName string) (*CryptsetupStatus, error) {
-	log.Debug("cryptsetup status %v", activeName)
 	out, err := cryptsetupCmd(nil, "status", activeName)
 	if err != nil {
 		return nil, fmt.Errorf("cryptsetup status %q: %w", activeName, err)
@@ -629,9 +628,6 @@ func ReadCryptsetupStatus(activeName string) (*CryptsetupStatus, error) {
 				reencryption = tokens[1]
 			}
 		}
-		//for _, token := range tokens {
-		//       fmt.Println("Status: token=", token)
-		//}
 	}
 	err = scanner.Err()
 	if err != nil {
