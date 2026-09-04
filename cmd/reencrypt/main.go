@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/hex"
+	"flag"
 	"fmt"
 	"github.com/snapcore/secboot"
 	"github.com/snapcore/secboot/log"
@@ -13,10 +14,10 @@ import (
 )
 
 const Usage = `
-usage: 1. reencrypt              ACTIVE-NAME KEYSLOT-NAME:UNLOCK-KEY-HEX ...
-       2. reencrypt --status     ACTIVE-NAME
-       3. reencrypt --initialize ACTIVE-NAME KEYSLOT-NAME:UNLOCK-KEY-HEX ...
-       4. reencrypt --resume     ACTIVE-NAME UNLOCK-KEY-HEX
+usage: 1. reencrypt [OPTIONS]              ACTIVE-NAME KEYSLOT-NAME:UNLOCK-KEY-HEX ...
+       2. reencrypt [OPTIONS] --status     ACTIVE-NAME
+       3. reencrypt [OPTIONS] --initialize ACTIVE-NAME KEYSLOT-NAME:UNLOCK-KEY-HEX ...
+       4. reencrypt [OPTIONS] --resume     ACTIVE-NAME UNLOCK-KEY-HEX
 
 Reencrypt an active encrypted container.
 
@@ -24,6 +25,7 @@ Options:
   --status      Only query the reencryption status
   --initialize  Only initialize reencryption
   --resume      Only resume reencryption
+  -v            Be verbose
 
 For initializing reencryption, all unlock keys must be provided with
 the name of their keyslot.
@@ -40,26 +42,39 @@ Examples:
   reencrypt --resume crypt01 010203...
 `
 
+var (
+	cliArgInitialize bool
+	cliArgResume     bool
+	cliArgStatus     bool
+	cliArgVerbose    bool
+)
+
 func main() {
-	args := os.Args
-	if len(args) <= 1 {
-		fmt.Print(Usage)
-		os.Exit(1)
+	flag.Usage = func() {
+		fmt.Fprint(os.Stderr, Usage)
+	}
+	flag.BoolVar(&cliArgInitialize, "initialize", false, "xxx")
+	flag.BoolVar(&cliArgResume, "resume", false, "xxx")
+	flag.BoolVar(&cliArgStatus, "status", false, "xxx")
+	flag.BoolVar(&cliArgVerbose, "v", false, "be verbose")
+	flag.Parse()
+
+	args := flag.Args()
+
+	if cliArgVerbose {
+		log.SetLogLevel(log.LogLevelDebug)
+	} else {
+		log.SetLogLevel(log.LogLevelInfo)
 	}
 
-	log.SetLogLevel(log.LogLevelDebug)
-
-	args = args[1:] // pop argument zero
-	arg := &args[0]
 	var err error
-	switch *arg {
-	case "--status":
-		err = cmdStatus(args[1:]...)
-	case "--initialize":
-		err = cmdInitialize(args[1:]...)
-	case "--resume":
-		err = cmdResume(args[1:]...)
-	default:
+	if cliArgStatus {
+		err = cmdStatus(args...)
+	} else if cliArgInitialize {
+		err = cmdInitialize(args...)
+	} else if cliArgResume {
+		err = cmdResume(args...)
+	} else {
 		err = cmdReencrypt(args...)
 	}
 
@@ -119,7 +134,7 @@ func cmdStatus(args ...string) error {
 	}
 	activeName := args[0]
 
-	log.Info("reencrypt status %v", activeName)
+	log.Debug("reencrypt status %v", activeName)
 
 	reencryption, err := secboot.ReencryptionForActiveVolume(activeName)
 	if err != nil {
@@ -130,7 +145,7 @@ func cmdStatus(args ...string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Status:", status)
+	fmt.Println(status)
 	return nil
 }
 
