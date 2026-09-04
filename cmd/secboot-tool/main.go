@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/snapcore/secboot"
+	"github.com/snapcore/secboot/internal/luksview"
+	"github.com/snapcore/secboot/log"
 	"os"
 )
 
 const Usage = `
-usage: 1. secboottool GetDiskUnlockKeyFromKernel DEVICE
-       2. secboottool ListLUKS2ContainerKeyNames DEVICE
+usage: 1. secboot-tool GetDiskUnlockKeyFromKernel DEVICE
+       2. secboot-tool print-tokens DEVICE
 `
 
 func usage() {
@@ -23,6 +26,8 @@ func main() {
 		usage()
 	}
 
+	log.SetLogLevel(log.LogLevelDebug)
+
 	arg := args[1]
 	args = args[2:] // pop 2 first items from the command line
 	switch arg {
@@ -31,11 +36,11 @@ func main() {
 			usage()
 		}
 		GetDiskUnlockKeyFromKernel(args[0])
-	case "ListLUKS2ContainerKeyNames":
+	case "print-tokens":
 		if len(args) == 0 {
 			usage()
 		}
-		ListLUKS2ContainerKeyNames(args[0])
+		printTokens(args[0])
 	default:
 		usage()
 	}
@@ -52,19 +57,16 @@ func GetDiskUnlockKeyFromKernel(devicePath string) {
 	fmt.Println("---")
 }
 
-func ListLUKS2ContainerKeyNames(devicePath string) {
-	fmt.Println("ListLUKS2ContainerKeyNames")
-	names, err := secboot.ListLUKS2ContainerUnlockKeyNames(devicePath)
+func printTokens(devicePath string) {
+	view, err := luksview.NewView(context.Background(), devicePath)
 	if err != nil {
-		fmt.Printf("ListLUKS2ContainerUnlockKeyNames -> err=%v\n", err)
-	} else {
-		fmt.Printf("ListLUKS2ContainerUnlockKeyNames -> %v\n", names)
+		fmt.Println(err)
+		os.Exit(1)
 	}
-	names, err = secboot.ListLUKS2ContainerRecoveryKeyNames(devicePath)
-	if err != nil {
-		fmt.Printf("ListLUKS2ContainerRecoveryKeyNames -> err=%v\n", err)
-	} else {
-		fmt.Printf("ListLUKS2ContainerRecoveryKeyNames -> %v\n", names)
+	format := "%-30v %-30v\n"
+	fmt.Printf(format, "NAME", "TYPE")
+	for _, name := range view.TokenNames() {
+		token, _, _ := view.TokenByName(name)
+		fmt.Printf(format, name, token.Type())
 	}
-
 }
