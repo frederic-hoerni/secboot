@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/snapcore/secboot/log"
 	"github.com/snapcore/secboot/internal/luks2"
 )
 
@@ -98,6 +99,7 @@ func (v *View) Reread() error {
 	for id, token := range hdr.Metadata.Tokens {
 		named, ok := token.(NamedToken)
 		if !ok {
+			log.Warning("LUKS header has unsupported token (type %q)", token.Type())
 			continue
 		}
 
