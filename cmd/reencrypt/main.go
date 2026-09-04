@@ -54,13 +54,13 @@ func main() {
 	var err error
 	switch *arg {
 	case "--status":
-		err = status(args[1:]...)
+		err = cmdStatus(args[1:]...)
 	case "--initialize":
-		err = initialize(args[1:]...)
+		err = cmdInitialize(args[1:]...)
 	case "--resume":
-		err = resume(args[1:]...)
+		err = cmdResume(args[1:]...)
 	default:
-		err = reencrypt(args...)
+		err = cmdReencrypt(args...)
 	}
 
 	if err != nil {
@@ -78,7 +78,7 @@ func splitUnlockKeySpec(s string) (string, string, error) {
 	return items[0], items[1], nil
 }
 
-func reencrypt(args ...string) error {
+func cmdReencrypt(args ...string) error {
 
 	if len(args) < 2 {
 		return fmt.Errorf("reencrypt: not enough arguments")
@@ -88,12 +88,12 @@ func reencrypt(args ...string) error {
 
 	log.Info("reencrypt %v with %v key(s)", activeName, len(unlockKeysHex))
 
-	err := status(activeName)
+	err := cmdStatus(activeName)
 	if err != nil {
 		return err
 	}
 
-	err = initialize(append([]string{activeName}, unlockKeysHex...)...)
+	err = cmdInitialize(append([]string{activeName}, unlockKeysHex...)...)
 	if err != nil {
 		fmt.Printf("Cannot initialize reencryption of %v: %v\n", activeName, err)
 		return err
@@ -105,7 +105,7 @@ func reencrypt(args ...string) error {
 		// Should not happen, as already validated in initialize above
 		return err
 	}
-	err = resume(activeName, unlockKey)
+	err = cmdResume(activeName, unlockKey)
 	if err != nil {
 		fmt.Printf("Cannot resume reencryption of %v: %v\n", activeName, err)
 		return err
@@ -113,7 +113,7 @@ func reencrypt(args ...string) error {
 	return nil
 }
 
-func status(args ...string) error {
+func cmdStatus(args ...string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("status: bad argument count")
 	}
@@ -134,7 +134,7 @@ func status(args ...string) error {
 	return nil
 }
 
-func initialize(args ...string) error {
+func cmdInitialize(args ...string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("initialize: missing argument")
 	}
@@ -178,7 +178,7 @@ func initialize(args ...string) error {
 	return nil
 }
 
-func resume(args ...string) error {
+func cmdResume(args ...string) error {
 	if len(args) != 2 {
 		return fmt.Errorf("initialize: bad argument count")
 	}
@@ -204,18 +204,25 @@ func resume(args ...string) error {
 	}
 
 	i := 0
-
-	for msg := range reencProgressChannel {
-		fmt.Println(msg)
+	var msg secboot.ReencryptionProgressEvent
+	for msg = range reencProgressChannel {
 		i++
+		fmt.Printf("%v", msg.Type)
+		if msg.Error != nil {
+			fmt.Printf(": %v", msg.Error)
+		}
 		switch msg.Type {
 		case secboot.ReencryptionProgressCompleted:
+			fmt.Println()
 			return nil
 		case secboot.ReencryptionProgressError:
-			return nil
+			fmt.Println()
+			return fmt.Errorf("Reencryption failed")
 		case secboot.ReencryptionProgressStarted:
+			fmt.Println()
 			continue
 		case secboot.ReencryptionProgressRunning:
+			fmt.Printf(": %v / %v\n", msg.Details.BytesReencryptedSoFar, msg.Details.DeviceSize)
 			continue
 		}
 	}
