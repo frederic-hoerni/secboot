@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"os"
 )
 
 // PIN represents a numeric PIN.
@@ -36,6 +37,7 @@ type PIN struct {
 // string has a length of zero, or more than 256, or contains anything other
 // than ASCII base-10 digits, an error will be returned.
 func ParsePIN(s string) (PIN, error) {
+	fmt.Fprintf(os.Stderr, "xfh: ParsePIN: s=%v\n", s)
 	l := len(s)
 	switch {
 	case l == 0:

@@ -796,6 +796,8 @@ func (m *activateOneContainerStateMachine) tryPassphraseKeyslotsHelper(ctx conte
 }
 
 func (m *activateOneContainerStateMachine) tryPINKeyslotsHelper(ctx context.Context, slotRecords keyslotAttemptRecordPrioritySlice, pin PIN) (unlockKey DiskUnlockKey, primaryKey PrimaryKey, success bool) {
+	fmt.Fprintf(os.Stderr, "xfh: tryPINKeyslotsHelper: pin=%v\n", pin)
+
 	for _, record := range slotRecords {
 		if !record.usable(m.flags) {
 			// A previous error might have marked this as unusable.

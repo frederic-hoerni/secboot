@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 
 	"github.com/canonical/go-tpm2"
 
@@ -78,6 +79,7 @@ func (h *platformKeyDataHandler) recoverKeysCommon(data *secboot.PlatformKeyData
 	}
 	defer tpm.Close()
 
+	fmt.Fprintf(os.Stderr, "xfh: unsealDataFromTPM(authKey=%x)\n", authKey)
 	symKey, err := k.unsealDataFromTPM(tpm.TPMContext, authKey, tpm.HmacSession())
 	if err != nil {
 		var e InvalidKeyDataError

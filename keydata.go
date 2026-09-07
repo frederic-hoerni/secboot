@@ -30,6 +30,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"os"
 	"time"
 
 	"github.com/snapcore/secboot/internal/pbkdf2"
@@ -624,6 +625,8 @@ func (d *KeyData) derivePassphraseKeys(passphrase string) (key, iv, auth []byte,
 }
 
 func (d *KeyData) derivePINAuthKey(pin PIN) ([]byte, error) {
+	fmt.Fprintf(os.Stderr, "xfh: derivePINAuthKey: pin=%x\n", pin)
+
 	if d.data.PINParams == nil {
 		return nil, keyDataError{errors.New("no PIN params")}
 	}
@@ -646,10 +649,13 @@ func (d *KeyData) derivePINAuthKey(pin PIN) ([]byte, error) {
 	if !hashAlgAvailable(&params.KDF.Hash) {
 		return nil, fmt.Errorf("unavailable pbkdf2 digest algorithm %v", params.KDF.Hash)
 	}
+	fmt.Fprintf(os.Stderr, "xfh: derivePINAuthKey: salt=%x, iterations=%v, hashalgo=%v\n", params.KDF.Salt, pbkdfParams.Iterations, pbkdfParams.HashAlg)
 	key, err := pbkdf2.Key(string(pin.Bytes()), params.KDF.Salt, pbkdfParams, uint(params.AuthKeySize))
 	if err != nil {
 		return nil, xerrors.Errorf("cannot derive auth key from PIN: %w", err)
 	}
+	fmt.Fprintf(os.Stderr, "xfh: derivePINAuthKey: pbkdf2 key=%x\n", key)
+
 	return key, nil
 }
 
@@ -961,7 +967,10 @@ func (d *KeyData) RecoverKeysWithPIN(pin PIN) (DiskUnlockKey, PrimaryKey, error)
 		return nil, nil, ErrNoPlatformHandlerRegistered
 	}
 
+	fmt.Fprintf(os.Stderr, "xfh: RecoverKeysWithPIN: pin=%v\n", pin)
+
 	key, err := d.derivePINAuthKey(pin)
+	fmt.Fprintf(os.Stderr, "xfh: derivePINAuthKey() -> key=%x, err=%v\n", key, err)
 	if err != nil {
 		return nil, nil, err
 	}
