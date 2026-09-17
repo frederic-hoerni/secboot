@@ -79,6 +79,10 @@ const (
 	// ImportToken (yet to be implemented). This was introduced to cryptsetup by:
 	// https://gitlab.com/cryptsetup/cryptsetup/-/commit/98cd52c8d7bddf5b4c1ff775158a48bbb522acb2
 	FeatureTokenReplace
+
+	// FeatureReencrypt indicates that reencryption can be done using multiple
+	// binary unlock keys (passphrases) of arbitrary size.
+	FeatureReencrypt
 )
 
 type CryptsetupStatus struct {
@@ -163,6 +167,10 @@ func DetectCryptsetupFeatures() Features {
 		if _, err := cryptsetupCmd(nil, "--test-args", "token", "import", "--token-id", "0",
 			"--token-replace", "/dev/null"); err == nil {
 			features |= FeatureTokenReplace
+		}
+		if _, err := cryptsetupCmd(nil, "--test-args", "reencrypt", "--keys-from-stdin-sizes", "1,2",
+			"--active-name", "some-active-name"); err == nil {
+			features |= FeatureReencrypt
 		}
 	})
 	return features

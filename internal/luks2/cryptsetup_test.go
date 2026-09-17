@@ -130,7 +130,8 @@ func (s *cryptsetupSuite) testDetectCryptsetupFeatures(c *C, expected Features) 
 
 	c.Check(mockCryptsetup.Calls(), DeepEquals, [][]string{
 		{"cryptsetup", "--version"},
-		{"cryptsetup", "--test-args", "token", "import", "--token-id", "0", "--token-replace", "/dev/null"}})
+		{"cryptsetup", "--test-args", "token", "import", "--token-id", "0", "--token-replace", "/dev/null"},
+		{"cryptsetup", "--test-args", "reencrypt", "--keys-from-stdin-sizes", "1,2", "--active-name", "some-active-name"}})
 	mockCryptsetup.ForgetCalls()
 
 	features = DetectCryptsetupFeatures()
@@ -139,7 +140,7 @@ func (s *cryptsetupSuite) testDetectCryptsetupFeatures(c *C, expected Features) 
 }
 
 func (s *cryptsetupSuite) TestDetectCryptsetupFeaturesAll(c *C) {
-	s.testDetectCryptsetupFeatures(c, FeatureHeaderSizeSetting|FeatureTokenImport|FeatureTokenReplace)
+	s.testDetectCryptsetupFeatures(c, FeatureHeaderSizeSetting|FeatureTokenImport|FeatureTokenReplace|FeatureReencrypt)
 }
 
 func (s *cryptsetupSuite) TestDetectCryptsetupFeaturesNone(c *C) {
