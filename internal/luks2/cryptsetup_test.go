@@ -637,6 +637,19 @@ func (s *cryptsetupSuite) TestReencryptInitialize(c *C) {
 		"--batch-mode", "--init-only", "--active-name", "some-active-name"})
 }
 
+func (s *cryptsetupSuite) TestReencryptInitializeExit1(c *C) {
+	s.cryptsetup.ForgetCalls()
+
+	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "exit 1")
+	defer mockCryptsetup.Restore()
+
+	unlockKeys := [][]byte{
+		{1, 2, 3},
+		{4, 5, 6, 7, 8}}
+	err := ReencryptInitialize(context.Background(), "some-active-name", unlockKeys)
+	c.Assert(err, NotNil)
+}
+
 func (s *cryptsetupSuite) TestReencryptResume(c *C) {
 	s.cryptsetup.ForgetCalls()
 
@@ -680,6 +693,82 @@ func (s *cryptsetupSuite) TestReencryptResume(c *C) {
 	<-outputDone
 	c.Check(stdoutLines, Equals, "unlockkey=0000\nstdout-1\nstdout-2\nstdout-3\n")
 	c.Check(stderrLines, Equals, "stderr-1\nstderr-2\nstderr-3\n")
+}
+
+func (s *cryptsetupSuite) TestReencryptResumeExit1(c *C) {
+	s.cryptsetup.ForgetCalls()
+
+	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "exit 1")
+	defer mockCryptsetup.Restore()
+
+	// The cryptsetup process is launched asynchronously and its output
+	// is collected afterwards.
+	unlockKeys := []byte("0000")
+	cmd, stdoutPipe, stderrPipe, err := ReencryptResume(context.Background(), "some-active-name", unlockKeys)
+	c.Assert(err, IsNil)
+
+	var stdoutLines, stderrLines string
+	readLines := func(pipe io.Reader, lines *string, outputDone chan<- struct{}) {
+		inputReader := bufio.NewReader(pipe)
+		for {
+			line, err := inputReader.ReadString('\n')
+			if err != nil {
+				break
+			}
+			*lines += line
+		}
+		outputDone <- struct{}{} // notify the end to the caller of the goroutine
+	}
+	outputDone := make(chan struct{}, 2)
+	go readLines(stdoutPipe, &stdoutLines, outputDone)
+	go readLines(stderrPipe, &stderrLines, outputDone)
+
+	// Wait for the command to terminate
+	err = cmd.Wait()
+	c.Assert(err, NotNil)
+}
+
+func (s *cryptsetupSuite) TestReadCryptsetupStatus(c *C) {
+	s.cryptsetup.ForgetCalls()
+
+	script := `
+	echo "  device:  /dev/sda1"
+	echo "  reencryption:  reenc-xxx"
+	`
+	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", script)
+	defer mockCryptsetup.Restore()
+
+	status, err := ReadCryptsetupStatus("example-name")
+	c.Assert(err, IsNil)
+	c.Check(status.Device, Equals, "/dev/sda1")
+	c.Check(status.Reencryption, Equals, "reenc-xxx")
+}
+
+func (s *cryptsetupSuite) TestReadCryptsetupStatusMissing(c *C) {
+	s.cryptsetup.ForgetCalls()
+
+	script := `
+	echo "  xdevice:  /dev/sda1"
+	echo "  xreencryption:  reenc-xxx"
+	`
+	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", script)
+	defer mockCryptsetup.Restore()
+
+	status, err := ReadCryptsetupStatus("example-name")
+	c.Assert(err, IsNil)
+	c.Check(status.Device, Equals, "")
+	c.Check(status.Reencryption, Equals, "")
+}
+
+func (s *cryptsetupSuite) TestReadCryptsetupStatusExit1(c *C) {
+	s.cryptsetup.ForgetCalls()
+
+	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "echo 123; exit 1")
+	defer mockCryptsetup.Restore()
+
+	status, err := ReadCryptsetupStatus("example-name")
+	c.Check(err, NotNil)
+	c.Assert(status, IsNil)
 }
 
 type testAddKeyData struct {
