@@ -86,7 +86,7 @@ func superviseReencryption(cmd *exec.Cmd, stdoutPipe io.ReadCloser, stderrPipe i
 	outChan <- secboot.ReencryptionProgressEvent{Type: secboot.ReencryptionProgressStarted}
 
 	// Helper function to scan a pipe line by line
-	streamLines := func(pipe io.ReadCloser, outputDone chan<- struct{}) {
+	streamLines := func(pipe io.Reader, outputDone chan<- struct{}) {
 		scanner := bufio.NewScanner(pipe)
 		for scanner.Scan() {
 			rawBytes := scanner.Bytes() // should be in JSON format
@@ -113,7 +113,7 @@ func superviseReencryption(cmd *exec.Cmd, stdoutPipe io.ReadCloser, stderrPipe i
 	<-outputDone
 	<-outputDone
 
-	// Wait for the command to clean up and grab the exit status
+	// Wait for the command to terminate and get the exit status
 	err := cmd.Wait()
 	if err != nil {
 		outChan <- secboot.ReencryptionProgressEvent{Type: secboot.ReencryptionProgressError, Error: err}

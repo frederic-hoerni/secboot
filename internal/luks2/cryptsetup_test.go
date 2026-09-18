@@ -20,9 +20,11 @@
 package luks2_test
 
 import (
+	"bufio"
 	"context"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -616,6 +618,68 @@ func (s *cryptsetupSuite) TestFormatWithInlineCryptoEngine(c *C) {
 	// feature detection
 	c.Assert(mockCryptsetup.Calls(), HasLen, 3)
 	c.Check(mockCryptsetup.Calls()[2], snapd_testutil.Contains, "--inline-crypto-engine")
+}
+
+func (s *cryptsetupSuite) TestReencryptInitialize(c *C) {
+	s.cryptsetup.ForgetCalls()
+
+	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "echo cryptsetup 2.6.1")
+	defer mockCryptsetup.Restore()
+
+	unlockKeys := [][]byte{
+		{1, 2, 3},
+		{4, 5, 6, 7, 8}}
+	err := ReencryptInitialize(context.Background(), "some-active-name", unlockKeys)
+	c.Assert(err, IsNil)
+	c.Assert(mockCryptsetup.Calls(), HasLen, 1)
+	c.Check(mockCryptsetup.Calls()[0], DeepEquals, []string{
+		"cryptsetup", "reencrypt", "--type", "luks2", "--keys-from-stdin-sizes", "3,5",
+		"--batch-mode", "--init-only", "--active-name", "some-active-name"})
+}
+
+func (s *cryptsetupSuite) TestReencryptResume(c *C) {
+	s.cryptsetup.ForgetCalls()
+
+	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup",
+		"read k; echo unlockkey=$k; for i in 1 2 3; do echo stdout-$i; echo stderr-$i >&2; done")
+	defer mockCryptsetup.Restore()
+
+	// The cryptsetup process is launched asynchronously and its output
+	// is collected afterwards.
+	unlockKeys := []byte("0000")
+	cmd, stdoutPipe, stderrPipe, err := ReencryptResume(context.Background(), "some-active-name", unlockKeys)
+	c.Assert(err, IsNil)
+
+	var stdoutLines, stderrLines string
+	readLines := func(pipe io.Reader, lines *string, outputDone chan<- struct{}) {
+		inputReader := bufio.NewReader(pipe)
+		for {
+			line, err := inputReader.ReadString('\n')
+			if err != nil {
+				break
+			}
+			*lines += line
+		}
+		outputDone <- struct{}{} // notify the end to the caller of the goroutine
+	}
+	outputDone := make(chan struct{}, 2)
+	go readLines(stdoutPipe, &stdoutLines, outputDone)
+	go readLines(stderrPipe, &stderrLines, outputDone)
+
+	// Wait for the command to terminate
+	err = cmd.Wait()
+	c.Assert(err, IsNil)
+	c.Assert(mockCryptsetup.Calls(), HasLen, 1)
+	c.Check(mockCryptsetup.Calls()[0], DeepEquals, []string{
+		"cryptsetup", "reencrypt", "--type", "luks2", "--key-file", "-",
+		"--batch-mode", "--resume-only", "--progress-frequency", "1", "--progress-json",
+		"--hotzone-size", "10M", "--active-name", "some-active-name"})
+
+	// Wait for both readers to finish digesting the streams
+	<-outputDone
+	<-outputDone
+	c.Check(stdoutLines, Equals, "unlockkey=0000\nstdout-1\nstdout-2\nstdout-3\n")
+	c.Check(stderrLines, Equals, "stderr-1\nstderr-2\nstderr-3\n")
 }
 
 type testAddKeyData struct {

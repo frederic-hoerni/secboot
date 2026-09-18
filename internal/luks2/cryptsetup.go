@@ -573,22 +573,21 @@ func TestContainerKey(devicePath string, key []byte) bool {
 
 func ReencryptInitialize(ctx context.Context, activeName string, unlockKeys [][]byte) error {
 	log.Debugf("ReencryptInitialize: unlockKeys=%v", unlockKeys)
-	var sizes strings.Builder
+	sizes := []string{}
 	// Prepare concatenated keys
 	var allKeys []byte
 	for _, unlockKey := range unlockKeys {
-		sizes.WriteString(strconv.Itoa(len(unlockKey)))
-		sizes.WriteString(",")
+		sizes = append(sizes, strconv.Itoa(len(unlockKey)))
 		allKeys = append(allKeys, unlockKey...)
 	}
-	log.Debugf("ReencryptInitialize: sizes=%v", sizes.String())
+	log.Debugf("ReencryptInitialize: sizes=%v", strings.Join(sizes, ","))
 	log.Debugf("ReencryptInitialize: keys=%v", allKeys)
 
 	args := []string{
 		"reencrypt",
 		"--type", "luks2",
 		// read existing key from stdin
-		"--keys-from-stdin-sizes", sizes.String(),
+		"--keys-from-stdin-sizes", strings.Join(sizes, ","),
 		"--batch-mode",
 		"--init-only",
 		"--active-name", activeName}
