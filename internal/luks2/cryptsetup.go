@@ -86,7 +86,9 @@ const (
 )
 
 type CryptsetupStatus struct {
+	// Device is the underlying disk device of the active LUKS volume
 	Device       string
+	// Reencryption indicates the state of reencryption as reported by 'cryptsetup status'
 	Reencryption string
 }
 
@@ -571,6 +573,10 @@ func TestContainerKey(devicePath string, key []byte) bool {
 	return err == nil
 }
 
+// ReencryptInitialize initializes the header of an online LUKS2 container.
+//
+// activeName: name of the active device mapper volume
+// unlockKeys: all unlock keys of the LUK2 container, in the order of the keyslots
 func ReencryptInitialize(ctx context.Context, activeName string, unlockKeys [][]byte) error {
 	log.Debugf("ReencryptInitialize: unlockKeys=%v", unlockKeys)
 	sizes := []string{}
@@ -596,7 +602,17 @@ func ReencryptInitialize(ctx context.Context, activeName string, unlockKeys [][]
 	return cryptsetupCmdContext(ctx, cmdInput, args...)
 }
 
-func ReencryptResume(ctx context.Context, activeName string, unlockKey []byte) (*exec.Cmd, io.ReadCloser, io.ReadCloser, error) {
+// ReencryptResume actually starts reencryption of the data of a LUKS2 volume
+// that has been initialized by [ReencryptInitialize], or continues reencryption
+// after it got interrupted (eg: by a hard reset).
+//
+// activeName: name of the active device mapper volume
+// unlockKey:  unlock key of one of the keyslots
+//
+// The operation is started in the background and the caller must wait on the
+// returned [exec.Cmd] to get the exit status and release any resources
+// associated with it.
+func ReencryptResume(ctx context.Context, activeName string, unlockKey []byte) (cmd *exec.Cmd, stdout, stderr io.ReadCloser, err error) {
 	args := []string{
 		"reencrypt",
 		"--type", "luks2",
@@ -614,6 +630,7 @@ func ReencryptResume(ctx context.Context, activeName string, unlockKey []byte) (
 	return cryptsetupCmdAsync(ctx, cmdInput, args...)
 }
 
+// ReadCryptsetupStatus returns the cryptsetup status of an active dm volume
 func ReadCryptsetupStatus(activeName string) (*CryptsetupStatus, error) {
 	out, err := cryptsetupCmd(nil, "status", activeName)
 	if err != nil {
