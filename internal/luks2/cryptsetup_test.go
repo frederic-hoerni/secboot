@@ -105,6 +105,12 @@ func (s *cryptsetupSuiteBase) mockCryptsetupFeatures(c *C, features Features) (c
 		responses = append(responses, "1")
 	}
 
+	if features&FeatureReencrypt > 0 {
+		responses = append(responses, "0")
+	} else {
+		responses = append(responses, "1")
+	}
+
 	c.Check(ioutil.WriteFile(responsesFile, []byte(strings.Join(responses, "\n")), 0644), IsNil)
 
 	cryptsetupBottom := `
@@ -616,8 +622,8 @@ func (s *cryptsetupSuite) TestFormatWithInlineCryptoEngine(c *C) {
 	err := Format("some-path", "test", key, options)
 	c.Assert(err, IsNil)
 	// feature detection
-	c.Assert(mockCryptsetup.Calls(), HasLen, 3)
-	c.Check(mockCryptsetup.Calls()[2], snapd_testutil.Contains, "--inline-crypto-engine")
+	c.Assert(mockCryptsetup.Calls(), HasLen, 4)
+	c.Check(mockCryptsetup.Calls()[3], snapd_testutil.Contains, "--inline-crypto-engine")
 }
 
 func (s *cryptsetupSuite) TestReencryptInitialize(c *C) {
