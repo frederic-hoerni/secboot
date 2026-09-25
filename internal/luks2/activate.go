@@ -61,7 +61,7 @@ func Activate(volumeName, sourceDevicePath string, key []byte, slot int) error {
 
 // Deactivate detaches the LUKS volume with the supplied name.
 func Deactivate(volumeName string) error {
-	log.Debugf("%v detach", systemdCryptsetupPath)
+	log.Debugf("%v detach %v", systemdCryptsetupPath, volumeName)
 	cmd := exec.Command(systemdCryptsetupPath, "detach", volumeName)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, "SYSTEMD_LOG_TARGET=console")
