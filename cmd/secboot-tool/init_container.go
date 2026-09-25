@@ -19,7 +19,12 @@ usage: secboot-tool init [<options>] <device> <unlock-key-hex>
 Initialize (format) an encrypted container with the 'plainkey' mechanism.
 
 Options:
-  -h, --help	 Show this help message
+  -m, --mechanism <mechanism>
+                 Select a mechanism for key protection (see below)
+  --print-unlock-key
+                 Print the unlock key (for test and debug only)
+
+  -h, --help     Show this help message
   -v, --verbose  Be verbose
 
 Arguments:
@@ -27,18 +32,22 @@ Arguments:
   <unlock-key-hex> Unlock key (hexadecimal)
 
 Mechanisms:
+  none
+      The given <unlock-key-hex> is used directly as the LUKS passphrase.
+      This is the default.
   plainkey
       An LUKS passphrase is randomly generated and stored in the
       LUKS header, encrypted by the given <unlock-key-hex>.
 
 Examples:
-  secboot-tool activate /dev/sda1 crypt02 30303030
+  secboot-tool init /dev/sda1 30303030303131313132323232333333333434343435353535363636363737373738383838
 `
 
 var optsInit struct {
-	PrintUnlockKey bool `short:"p" long:"print-unlock-key" description:"Print generated unlock key"`
-	Verbose        bool `short:"v" long:"verbose" description:"Show debug information"`
-	Help           bool `short:"h" long:"help" description:"Show help"`
+	Mechanism      string `short:"m" long:"mechanism" description:"Mechanism for key protection" required:"false" default:"none"`
+	PrintUnlockKey bool   `short:"p" long:"print-unlock-key" description:"Print generated unlock key"`
+	Verbose        bool   `short:"v" long:"verbose" description:"Show debug information"`
+	Help           bool   `short:"h" long:"help" description:"Show help"`
 }
 
 func cmdInitContainerPlainkey(args []string) error {
@@ -67,7 +76,7 @@ func cmdInitContainerPlainkey(args []string) error {
 	}
 
 	if len(positionalArgs) != 2 {
-		return fmt.Errorf("bad argument count.")
+		return fmt.Errorf("bad argument count")
 	}
 
 	devicePath := positionalArgs[0]
@@ -76,12 +85,31 @@ func cmdInitContainerPlainkey(args []string) error {
 		return fmt.Errorf("bad unlok-key-hex: %w", err)
 	}
 
-	keyData, _, unlockKey, err := plainkey.NewProtectedKey(rand.Reader, protectorKey, nil)
-	if err != nil {
-		return fmt.Errorf("cannot create protected key: %w", err)
+	keyslotName := "default"
+	initLUKSopts := &secboot.InitializeLUKS2ContainerOptions{
+		MetadataKiBSize:     2048,
+		KeyslotsAreaKiBSize: 2560,
+		InlineCryptoEngine:  false,
+		InitialKeyslotName:  keyslotName,
 	}
 
-	if err := secboot.InitializeLUKS2Container(devicePath, "default-label", unlockKey, nil); err != nil {
+	var keyData *secboot.KeyData
+	var unlockKey []byte
+	switch optsInit.Mechanism {
+	case "plainkey":
+		keyData, _, unlockKey, err = plainkey.NewProtectedKey(rand.Reader, protectorKey, nil)
+		if err != nil {
+			return fmt.Errorf("cannot create protected key: %w", err)
+		}
+	case "none":
+		unlockKey = protectorKey
+	default:
+		return fmt.Errorf("invalid mechanism")
+	}
+
+	log.Debugf("using mechanism: %v", optsInit.Mechanism)
+
+	if err := secboot.InitializeLUKS2Container(devicePath, "default-label", unlockKey, initLUKSopts); err != nil {
 		return fmt.Errorf("cannot initialize LUKS2 container: %w", err)
 	}
 
@@ -89,12 +117,14 @@ func cmdInitContainerPlainkey(args []string) error {
 		fmt.Printf("%x\n", unlockKey)
 	}
 
-	tokenWriter, err := secboot.NewLUKS2KeyDataWriter(devicePath, "default")
-	if err != nil {
-		return fmt.Errorf("cannot create key data writer: %w", err)
-	}
-	if err := keyData.WriteAtomic(tokenWriter); err != nil {
-		return fmt.Errorf("cannot write key data to container: %w", err)
+	if optsInit.Mechanism == "plainkey" {
+		tokenWriter, err := secboot.NewLUKS2KeyDataWriter(devicePath, keyslotName)
+		if err != nil {
+			return fmt.Errorf("cannot create key data writer: %w", err)
+		}
+		if err := keyData.WriteAtomic(tokenWriter); err != nil {
+			return fmt.Errorf("cannot write key data to container: %w", err)
+		}
 	}
 	return nil
 }
