@@ -13,130 +13,82 @@ The typical use cases are:
 
 Prerequisites:
 
-- cryptsetup-bin with option `--keys-from-stdin-sizes`
+- `cryptsetup` supporting option `--keys-from-stdin-sizes`
 
 
 ## Testing
 
-### Using `cryptsetup` and `secboot-tool reencrypt`
+### Test with protection mechanism "none"
 
-To accelerate testing, set pbkdf iterations to a very low number (do not do that in production as it weakens security!):
-```
-FAST_PBKDF="--pbkdf-force-iterations 1000 --pbkdf pbkdf2"
-```
+Mechanism 'none' directly feeds the unlock key to the underlying LUKS2 container.
 
-Initialize local empty disk image and encrypt it with 3 keyslots:
+Setup:
 ```
 DEVICE=disk.img
-dd if=/dev/zero count=2 of=$DEVICE bs=1G
-PWD1=$(echo -e "123\n456")
-PWD2=$(echo -e "aaaa\nbbbb")
-PWD3=$(echo -e "xx\nyy")
-echo -n "$PWD1" | sudo cryptsetup luksFormat $DEVICE $FAST_PBKDF --key-file -
-echo -n "${PWD1}${PWD2}" | sudo cryptsetup -q luksAddKey $DEVICE $FAST_PBKDF --key-file - --keyfile-size 7 -
-echo -n "${PWD1}${PWD3}" | sudo cryptsetup -q luksAddKey $DEVICE $FAST_PBKDF --key-file - --keyfile-size 7 -
+dd if=/dev/zero of=$DEVICE bs=1G count=2
+UNLOCK_KEY_HEX=30303030303131313132323232333333333434343435353535363636363737373738383838
 
-echo '{"type":"ubuntu-fde","keyslots":["0"],"ubuntu_fde_name":"default"}' | sudo cryptsetup token import $DEVICE
-echo '{"type":"ubuntu-fde-recovery","keyslots":["1"],"ubuntu_fde_name":"default-recovery"}' | sudo cryptsetup token import $DEVICE
-echo '{"type":"ubuntu-fde","keyslots":["2"],"ubuntu_fde_name":"default-fallback"}' | sudo cryptsetup token import $DEVICE
+# Initialize the encrypted volume
+./secboot-tool init $DEVICE $UNLOCK_KEY_HEX
 
-echo -n "$PWD1" | sudo cryptsetup open $DEVICE crypt01 --key-file -
-```
-
-Perform reencryption using `secboot-tool`:
-```
-sudo ./secboot-tool reencrypt crypt01 default:3132330a343536 default-recovery:616161610a62626262 default-fallback:78780a7979
-```
-
-Close and check that all 3 keyslots have been retained:
-```
-sudo cryptsetup close crypt01
-
-echo -n "${PWD1}" | sudo cryptsetup open $DEVICE --test-passphrase --key-file -
-echo -n "${PWD2}" | sudo cryptsetup open $DEVICE --test-passphrase --key-file -
-echo -n "${PWD3}" | sudo cryptsetup open $DEVICE --test-passphrase --key-file -
-
-sudo cryptsetup luksDump $DEVICE --dump-json-metadata | jq .tokens
+# Basic checks with cryptsetup
+echo -n 0000011112222333344445555666677778888 | cryptsetup open $DEVICE --test-passphrase --key-file -
+cryptsetup luksDump $DEVICE --dump-json-metadata | jq .tokens
 {
   "0": {
-    "type": "example0",
+    "type": "ubuntu-fde",
     "keyslots": [
-      "3"
+      "0"
     ],
-    "ubuntu_fde_name": "default"
-  },
-  "1": {
-    "type": "example1",
-    "keyslots": [
-      "4"
-    ],
-    "ubuntu_fde_name": "default-recovery"
-  },
-  "2": {
-    "type": "example2",
-    "keyslots": [
-      "5"
-    ],
-    "ubuntu_fde_name": "default-fallback"
+    "ubuntu_fde_name": "default",
+    "ubuntu_fde_priority": 0
   }
 }
 ```
 
-### Test using `secboot-tool` and the "plainkey" mechanism
+Reencrypt:
+```
+# Activate the encrypted volume
+sudo ./secboot-tool activate $DEVICE crypt02 $UNLOCK_KEY_HEX
 
-Initialize and empty encrypted image with the "plainkey" mechanism:
-```
-DEVICE=disk.img
-dd if=/dev/zero count=2 of=$DEVICE bs=1G
-UNLOCK_KEY=$(./secboot-tool init --print-unlock-key $DEVICE 30303030)
-```
-
-Run (as root):
-```
-./secboot-tool activate $DEVICE crypt02 30303030
-./secboot-tool reencrypt crypt02 default:$UNLOCK_KEY
-...
+# Reencrypt
+sudo ./secboot-tool reencrypt crypt02 default:$UNLOCK_KEY_HEX
+reencrypt status crypt02
+none
+reencrypt initialize crypt02
+reencrypt resume crypt02
 started
-running: 115343360 / 2130706432
-running: 241172480 / 2130706432
-running: 367001600 / 2130706432
-running: 492830720 / 2130706432
-running: 608174080 / 2130706432
-running: 723517440 / 2130706432
-running: 849346560 / 2130706432
-running: 975175680 / 2130706432
-running: 1101004800 / 2130706432
-running: 1226833920 / 2130706432
-running: 1352663040 / 2130706432
-running: 1478492160 / 2130706432
-running: 1593835520 / 2130706432
-running: 1719664640 / 2130706432
-running: 1835008000 / 2130706432
-running: 1950351360 / 2130706432
-running: 2065694720 / 2130706432
-running: 2130706432 / 2130706432
+running: 230686720 / 2140143616
+running: 482344960 / 2140143616
+running: 744488960 / 2140143616
+running: 1017118720 / 2140143616
+running: 1279262720 / 2140143616
+running: 1562378240 / 2140143616
+running: 1824522240 / 2140143616
+running: 2107637760 / 2140143616
+running: 2140143616 / 2140143616
 completed
-```
 
-Note: using `./secboot-tool deactivate disk.img` does not work as it needs a
-block device (which `disk.img` is not).
-
-Teardown:
-```
+# Deactivate
 sudo cryptsetup close crypt02
 ```
 
-### Annex: details of the "plainkey" mechanism
+### Test with protection mechanism "plainkey"
 
-The "plainkey" mechanism (also called "plainkey" platform) is a way to store
+The plainkey mechanism (also called plainkey platform) is a way to store
 the LUKS passphrase in a LUKS token, the passphrase being encrypted by a
-protector key. It can be used in production provided that the protector key
-itself is protected by another mechanism (eg: by the "tpm2" mechanism).
+protector key.
 
-After initialization by the `secboot-tool init` command (see above), it looks like this:
+Setup:
 ```
+# Initialize the encrypted volume
 DEVICE=disk.img
-sudo cryptsetup luksDump $DEVICE --dump-json-metadata | jq .tokens
+dd if=/dev/zero of=$DEVICE bs=1G count=2
+UNLOCK_KEY_HEX=$(./secboot-tool init --print-unlock-key --mechanism plainkey $DEVICE 30303030)
+
+# Basic checks with cryptsetup
+echo $UNLOCK_KEY_HEX | xxd -revert -plain | cryptsetup open $DEVICE --test-passphrase --key-file -
+cryptsetup luksDump $DEVICE --dump-json-metadata | jq .tokens
 {
   "0": {
     "type": "ubuntu-fde",
@@ -162,6 +114,108 @@ sudo cryptsetup luksDump $DEVICE --dump-json-metadata | jq .tokens
       "kdf_alg": "sha256",
       "encrypted_payload": "RphJz+O/9pn4NeaadPt1DZZI1pjzBVrP8EHnNuPHGwyP7aztFeGssdAESlKZK7+MuB3AAt8Wd6JUB/7gCLXXs0kbnMV6jgB9Zy/UkMsMlF2OsUcymoM="
     }
+  }
+}
+```
+
+Reencrypt:
+```
+sudo ./secboot-tool activate --mechanism plainkey $DEVICE crypt02 30303030
+sudo ./secboot-tool reencrypt crypt02 default:$UNLOCK_KEY_HEX
+reencrypt status crypt02
+none
+reencrypt initialize crypt02
+reencrypt resume crypt02
+started
+running: 251658240 / 2140143616
+running: 482344960 / 2140143616
+running: 754974720 / 2140143616
+running: 1027604480 / 2140143616
+running: 1310720000 / 2140143616
+running: 1551892480 / 2140143616
+running: 1803550720 / 2140143616
+running: 2055208960 / 2140143616
+running: 2140143616 / 2140143616
+completed
+
+# Deactivate
+sudo cryptsetup close crypt02
+```
+
+### Test with multiple keyslots
+
+Setup:
+```
+# Initialize the encrypted volume
+DEVICE=disk.img
+dd if=/dev/zero of=$DEVICE bs=1G count=2
+PWD1=$(echo -e "123\n456")
+echo -n "$PWD1" | cryptsetup luksFormat $DEVICE --key-file -
+
+# Add 2 other keys
+PWD2=$(echo -e "aaaa\nbbbb")
+echo -n "${PWD1}${PWD2}" | cryptsetup -q luksAddKey $DEVICE --key-file - --keyfile-size 7 -
+
+PWD3=$(echo -e "xx\nyy")
+echo -n "${PWD1}${PWD3}" | cryptsetup -q luksAddKey $DEVICE --key-file - --keyfile-size 7 -
+
+# Add named tokens so that secboot can find them
+echo '{"type":"ubuntu-fde","keyslots":["0"],"ubuntu_fde_name":"default"}' | cryptsetup token import $DEVICE
+echo '{"type":"ubuntu-fde-recovery","keyslots":["1"],"ubuntu_fde_name":"default-recovery"}' | cryptsetup token import $DEVICE
+echo '{"type":"ubuntu-fde","keyslots":["2"],"ubuntu_fde_name":"default-fallback"}' | cryptsetup token import $DEVICE
+```
+
+Reencrypt:
+```
+echo -n "$PWD1" | sudo cryptsetup open $DEVICE crypt02 --key-file -
+
+sudo ./secboot-tool reencrypt crypt02 default:3132330a343536 default-recovery:616161610a62626262 default-fallback:78780a7979
+reencrypt status crypt02
+none
+reencrypt initialize crypt02
+reencrypt resume crypt02
+started
+running: 283115520 / 2130706432
+running: 566231040 / 2130706432
+running: 859832320 / 2130706432
+running: 1153433600 / 2130706432
+running: 1468006400 / 2130706432
+running: 1740636160 / 2130706432
+running: 2034237440 / 2130706432
+running: 2130706432 / 2130706432
+completed
+
+sudo cryptsetup close crypt02
+```
+
+Check that all 3 keyslots have been retained:
+```
+echo -n "${PWD1}" | cryptsetup open $DEVICE --test-passphrase --key-file -
+echo -n "${PWD2}" | cryptsetup open $DEVICE --test-passphrase --key-file -
+echo -n "${PWD3}" | cryptsetup open $DEVICE --test-passphrase --key-file -
+
+cryptsetup luksDump $DEVICE --dump-json-metadata | jq .tokens
+{
+  "0": {
+    "type": "ubuntu-fde",
+    "keyslots": [
+      "3"
+    ],
+    "ubuntu_fde_name": "default"
+  },
+  "1": {
+    "type": "ubuntu-fde-recovery",
+    "keyslots": [
+      "4"
+    ],
+    "ubuntu_fde_name": "default-recovery"
+  },
+  "2": {
+    "type": "ubuntu-fde",
+    "keyslots": [
+      "5"
+    ],
+    "ubuntu_fde_name": "default-fallback"
   }
 }
 ```
