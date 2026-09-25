@@ -40,6 +40,7 @@ Arguments:
 
 Examples:
   cryptsetup open /dev/vda5 crypt01
+  secboot-tool reencrypt crypt01 default-recovery:010203 default:00112233
   secboot-tool reencrypt --status crypt01
   secboot-tool reencrypt --initialize crypt01 default-recovery:010203 default:00112233
   secboot-tool reencrypt --resume crypt01 010203
@@ -110,7 +111,7 @@ func reencryptInitResume(args ...string) error {
 	activeName := args[0]
 	unlockKeysHex := args[1:] // remaining arguments
 
-	log.Infof("reencrypt %v with %v key(s)", activeName, len(unlockKeysHex))
+	log.Debugf("reencrypt %v with %v key(s)", activeName, len(unlockKeysHex))
 
 	err := reencryptStatus(activeName)
 	if err != nil {
@@ -143,7 +144,7 @@ func reencryptStatus(args ...string) error {
 	}
 	activeName := args[0]
 
-	log.Debugf("reencrypt status %v", activeName)
+	log.Infof("reencrypt status %v", activeName)
 
 	reencryption, err := secboot.ReencryptionForActiveVolume(activeName)
 	if err != nil {
@@ -199,7 +200,7 @@ func reencryptInitialize(args ...string) error {
 	if err != nil {
 		return fmt.Errorf("Cannot initialize: %w", err)
 	}
-	fmt.Println("Initialize: ok")
+	log.Debugf("Initialize: ok")
 	return nil
 }
 

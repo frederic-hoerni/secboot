@@ -20,7 +20,10 @@ usage: secboot-tool activate [<options>] <device> <active-name> <unlock-key-hex>
 Activate an encrypted container that has uses mechanism 'plainkey'.
 
 Options:
-  -h, --help	 Show this help message
+  -m, --mechanism <mechanism>
+                 Select a mechanism for key protection (see secboot-tool init)
+
+  -h, --help     Show this help message
   -v, --verbose  Be verbose
 
 Arguments:
@@ -33,8 +36,9 @@ Examples:
 `
 
 var optsActivate struct {
-	Verbose bool `short:"v" long:"verbose" description:"Show debug information"`
-	Help    bool `short:"h" long:"help" description:"Show help"`
+	Mechanism string `short:"m" long:"mechanism" description:"Mechanism for key protection" required:"false" default:"none" choice:"none" choice:"plainkey"`
+	Verbose   bool   `short:"v" long:"verbose" description:"Show debug information"`
+	Help      bool   `short:"h" long:"help" description:"Show help"`
 }
 
 func cmdActivateContainer(args []string) error {
@@ -67,6 +71,8 @@ func cmdActivateContainer(args []string) error {
 		return fmt.Errorf("bad unlock-key-hex: %w", err)
 	}
 
+	log.Debugf("using mechanism: %v", optsActivate.Mechanism)
+
 	container, err := secboot.FindStorageContainer(context.Background(), devicePath)
 	if err != nil {
 		return fmt.Errorf("findStorageContainer error: %w", err)
@@ -77,10 +83,17 @@ func cmdActivateContainer(args []string) error {
 		return fmt.Errorf("NewActivateContext error: %w", err)
 	}
 
-	plainkey.SetProtectorKeys(protectorKey)
+	if optsActivate.Mechanism == "plainkey" {
+		plainkey.SetProtectorKeys(protectorKey)
+	}
 
 	var options []secboot.ActivateOption
 	options = append(options, luks2.WithVolumeName(activeName))
+
+	if optsActivate.Mechanism == "none" {
+		options = append(options, secboot.WithExternalUnlockKey("secboot-tool", protectorKey, 0))
+	}
+
 	err = activateContext.ActivateContainer(context.Background(), container, options...)
 	if err != nil {
 		return fmt.Errorf("ActivateContainer error: %w", err)
