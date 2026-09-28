@@ -282,7 +282,6 @@ func (s *keyDataLuksSuite) testReader(c *C, data *testKeyDataLuksReaderData) {
 	c.Check(s.luks2.operations, DeepEquals, []string{"newLUKSView(context.TODO," + data.path + ")"})
 
 	c.Check(r.ReadableName(), Equals, data.path+":"+data.name)
-	c.Check(r.KeyslotID(), Equals, data.slot)
 	c.Check(r.Priority(), Equals, data.priority)
 
 	keyData, err = ReadKeyData(r)
@@ -369,9 +368,13 @@ func (s *keyDataLuksSuite) TestReaderTokenWithMultipleKeyslots(c *C) {
 				Data: json.RawMessage{}},
 		},
 		keyslots: map[int][]byte{0: nil}}
+
 	r, err := NewLUKS2KeyDataReader("/dev/sda1", "token-name-foo")
-	c.Assert(r, IsNil)
-	c.Check(err, ErrorMatches, "token has 2 keyslot\\(s\\)")
+
+	c.Assert(err, IsNil)
+	c.Check(s.luks2.operations, DeepEquals, []string{"newLUKSView(context.TODO,/dev/sda1)"})
+	c.Check(r.ReadableName(), Equals, "/dev/sda1:token-name-foo")
+	c.Check(r.Priority(), Equals, 0)
 }
 
 type keyDataLuksUnmockedSuite struct {
@@ -409,7 +412,6 @@ func (s *keyDataLuksUnmockedSuite) TestReaderAndWriter(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Check(r.ReadableName(), Equals, path+":default")
-	c.Check(r.KeyslotID(), Equals, 0)
 	c.Check(r.Priority(), Equals, 1)
 
 	keyData, err = ReadKeyData(r)

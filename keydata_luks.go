@@ -38,7 +38,6 @@ import (
 // new write support.
 type LUKS2KeyDataReader struct {
 	name     string
-	slot     int
 	priority int
 	*bytes.Reader
 }
@@ -69,25 +68,14 @@ func NewLUKS2KeyDataReader(devicePath, name string) (*LUKS2KeyDataReader, error)
 		return nil, errors.New("named keyslot does not contain key data yet")
 	}
 
-	if len(token.Keyslots()) != 1 {
-		return nil, fmt.Errorf("token has %v keyslot(s)", len(token.Keyslots()))
-	}
-
 	return &LUKS2KeyDataReader{
 		name:     devicePath + ":" + name,
-		slot:     token.Keyslots()[0],
 		priority: kdToken.Priority,
 		Reader:   bytes.NewReader(kdToken.Data)}, nil
 }
 
 func (r *LUKS2KeyDataReader) ReadableName() string {
 	return r.name
-}
-
-// KeyslotID indicates the keyslot ID associated with the token from which this
-// KeyData is read.
-func (r *LUKS2KeyDataReader) KeyslotID() int {
-	return r.slot
 }
 
 // Priority indicates the priority of the keyslot associated with the token from

@@ -260,7 +260,7 @@ func (s *readerSuite) TestContainerReaderReadKeyslotPlatform(c *C) {
 
 	var tmpl Keyslot
 	c.Assert(ks, Implements, &tmpl)
-	c.Check(ks.(Keyslot).KeyslotID(), Equals, 0)
+	c.Check(ks.(Keyslot).PreferredKeyslotId(), Equals, 0)
 }
 
 func (s *readerSuite) TestContainerReaderReadKeyslotPlatformDifferentName(c *C) {
@@ -283,7 +283,7 @@ func (s *readerSuite) TestContainerReaderReadKeyslotPlatformDifferentName(c *C) 
 
 	var tmpl Keyslot
 	c.Assert(ks, Implements, &tmpl)
-	c.Check(ks.(Keyslot).KeyslotID(), Equals, 0)
+	c.Check(ks.(Keyslot).PreferredKeyslotId(), Equals, 0)
 }
 
 func (s *readerSuite) TestContainerReaderReadKeyslotPlatformDifferentDevice(c *C) {
@@ -305,7 +305,7 @@ func (s *readerSuite) TestContainerReaderReadKeyslotPlatformDifferentDevice(c *C
 
 	var tmpl Keyslot
 	c.Assert(ks, Implements, &tmpl)
-	c.Check(ks.(Keyslot).KeyslotID(), Equals, 0)
+	c.Check(ks.(Keyslot).PreferredKeyslotId(), Equals, 0)
 }
 
 func (s *readerSuite) TestContainerReaderReadKeyslotRecovery(c *C) {
@@ -326,7 +326,7 @@ func (s *readerSuite) TestContainerReaderReadKeyslotRecovery(c *C) {
 
 	var tmpl Keyslot
 	c.Assert(ks, Implements, &tmpl)
-	c.Check(ks.(Keyslot).KeyslotID(), Equals, 1)
+	c.Check(ks.(Keyslot).PreferredKeyslotId(), Equals, 1)
 }
 
 func (s *readerSuite) TestContainerReaderReadKeyslotRecoveryDifferentKeyslotID(c *C) {
@@ -347,7 +347,7 @@ func (s *readerSuite) TestContainerReaderReadKeyslotRecoveryDifferentKeyslotID(c
 
 	var tmpl Keyslot
 	c.Assert(ks, Implements, &tmpl)
-	c.Check(ks.(Keyslot).KeyslotID(), Equals, 3)
+	c.Check(ks.(Keyslot).PreferredKeyslotId(), Equals, 3)
 }
 
 func (s *readerSuite) TestContainerReaderReadKeyslotPlatformDifferentPriority(c *C) {
@@ -369,7 +369,7 @@ func (s *readerSuite) TestContainerReaderReadKeyslotPlatformDifferentPriority(c 
 
 	var tmpl Keyslot
 	c.Assert(ks, Implements, &tmpl)
-	c.Check(ks.(Keyslot).KeyslotID(), Equals, 0)
+	c.Check(ks.(Keyslot).PreferredKeyslotId(), Equals, 0)
 }
 
 func (s *readerSuite) TestContainerReaderReadKeyslotPlatformDifferentKeyslotID(c *C) {
@@ -392,7 +392,7 @@ func (s *readerSuite) TestContainerReaderReadKeyslotPlatformDifferentKeyslotID(c
 
 	var tmpl Keyslot
 	c.Assert(ks, Implements, &tmpl)
-	c.Check(ks.(Keyslot).KeyslotID(), Equals, 1)
+	c.Check(ks.(Keyslot).PreferredKeyslotId(), Equals, 1)
 }
 
 func (s *readerSuite) TestContainerReaderReadKeyslotPlatformDifferentData(c *C) {
@@ -415,7 +415,7 @@ func (s *readerSuite) TestContainerReaderReadKeyslotPlatformDifferentData(c *C) 
 
 	var tmpl Keyslot
 	c.Assert(ks, Implements, &tmpl)
-	c.Check(ks.(Keyslot).KeyslotID(), Equals, 0)
+	c.Check(ks.(Keyslot).PreferredKeyslotId(), Equals, 0)
 }
 
 func (s *readerSuite) TestContainerReaderReadKeyslotPlatformRepeated(c *C) {
@@ -437,7 +437,7 @@ func (s *readerSuite) TestContainerReaderReadKeyslotPlatformRepeated(c *C) {
 
 	var tmpl Keyslot
 	c.Assert(ks, Implements, &tmpl)
-	c.Check(ks.(Keyslot).KeyslotID(), Equals, 0)
+	c.Check(ks.(Keyslot).PreferredKeyslotId(), Equals, 0)
 
 	restore := MockLUKS2Ops(&Luks2Api{
 		ListUnlockKeyNames: func(_ string) ([]string, error) {
@@ -481,7 +481,7 @@ func (s *readerSuite) TestContainerReaderReadKeyslotRecoveryRepeated(c *C) {
 
 	var tmpl Keyslot
 	c.Assert(ks, Implements, &tmpl)
-	c.Check(ks.(Keyslot).KeyslotID(), Equals, 1)
+	c.Check(ks.(Keyslot).PreferredKeyslotId(), Equals, 1)
 
 	restore := MockLUKS2Ops(&Luks2Api{
 		ListUnlockKeyNames: func(_ string) ([]string, error) {
@@ -555,5 +555,5 @@ func (s *readerSuite) TestContainerReaderReadKeyslotMultipleKeyslots(c *C) {
 
 	var tmpl Keyslot
 	c.Assert(ks, Implements, &tmpl)
-	c.Check(ks.(Keyslot).KeyslotID(), Equals, internal_luks2.AnySlot)
+	c.Check(ks.(Keyslot).PreferredKeyslotId(), Equals, internal_luks2.AnySlot)
 }

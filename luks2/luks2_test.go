@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/snapcore/secboot"
+	internal_luks2 "github.com/snapcore/secboot/internal/luks2"
 	"github.com/snapcore/secboot/internal/luksview"
 	. "github.com/snapcore/secboot/luks2"
 	. "gopkg.in/check.v1"
@@ -56,7 +57,7 @@ type mockKeyslot struct {
 	keyslotName     string
 	keyslotPriority int
 	keyslotData     secboot.KeyDataReader
-	keyslotId       int
+	keyslotIds      []int
 }
 
 func (i *mockKeyslot) Type() secboot.KeyslotType {
@@ -75,8 +76,12 @@ func (i *mockKeyslot) Data() secboot.KeyDataReader {
 	return i.keyslotData
 }
 
-func (i *mockKeyslot) KeyslotID() int {
-	return i.keyslotId
+func (i *mockKeyslot) PreferredKeyslotId() int {
+	if len(i.keyslotIds) == 1 {
+		return i.keyslotIds[0]
+	} else {
+		return internal_luks2.AnySlot
+	}
 }
 
 type mockLuks2KeyDataReader struct {

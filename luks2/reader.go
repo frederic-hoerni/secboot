@@ -25,7 +25,6 @@ import (
 	"sort"
 
 	"github.com/snapcore/secboot"
-	internal_luks2 "github.com/snapcore/secboot/internal/luks2"
 	"github.com/snapcore/secboot/internal/luksview"
 	"github.com/snapcore/secboot/log"
 )
@@ -73,7 +72,7 @@ func (s *storageContainerReadWriterImpl) ensureKeyslotNames() error {
 		keyslots[name] = &keyslotImpl{
 			keyslotType: secboot.KeyslotTypePlatform,
 			keyslotName: name,
-			keyslotId:   internal_luks2.AnySlot, // use AnySlot to indicate we haven't filled this Keyslot yet.
+			keyslotIds:  nil, // use nil to indicate we haven't filled this Keyslot yet.
 		}
 	}
 
@@ -88,7 +87,7 @@ func (s *storageContainerReadWriterImpl) ensureKeyslotNames() error {
 		keyslots[name] = &keyslotImpl{
 			keyslotType: secboot.KeyslotTypeRecovery,
 			keyslotName: name,
-			keyslotId:   internal_luks2.AnySlot, // use AnySlot to indicate we haven't filled this Keyslot yet.
+			keyslotIds:  nil, // use nil to indicate we haven't filled this Keyslot yet.
 		}
 	}
 
@@ -116,7 +115,7 @@ func (s *storageContainerReadWriterImpl) ensureKeyslot(ctx context.Context, name
 		return secboot.ErrKeyslotNotFound
 	}
 
-	if ks.keyslotId != internal_luks2.AnySlot {
+	if ks.keyslotIds != nil {
 		// We already have everything for this keyslot.
 		return nil
 	}
@@ -140,13 +139,7 @@ func (s *storageContainerReadWriterImpl) ensureKeyslot(ctx context.Context, name
 	}
 
 	log.Debugf("token.Keyslots()=%v", token.Keyslots())
-	// luksview guarantees there is always 1 or 2 keyslots.
-	if len(token.Keyslots()) == 1 {
-		ks.keyslotId = token.Keyslots()[0]
-	} else {
-		// Two keyslots associated with this token (happens when reencryption is in progress)
-		ks.keyslotId = internal_luks2.AnySlot
-	}
+	ks.keyslotIds = token.Keyslots()
 	if ks.keyslotType == secboot.KeyslotTypePlatform {
 		// TODO: Once the functionality of luksview is implemented directly in
 		// this package, we'll give recovery keyslots a priority as well. This
