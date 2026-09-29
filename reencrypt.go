@@ -92,8 +92,25 @@ type ReencryptionProgressEvent struct {
 }
 
 type Reencryption interface {
+	// Status gets the status of reencryption on the underlying backend device.
 	Status() (*ReencryptionStatus, error)
+
+	// Initialize creates the new encryption keys on the underlying backend device.
+	//
+	// All the unlock keys of the storage container must be provided
+	// (the key of the map shall be the keyslot name).
 	Initialize(ctx context.Context, unlockKeys map[string][]byte) error
+
+	// Resume starts reencrypting the blocks of the underlying backend device
+	// with the new encryption keys.
+	//
+	// This is done asynchronously, and the caller of this function must read all values
+	// from the channel up to the final ReencryptionProgressEvent to free all resources.
+	// The [ReencryptionProgressEvent.Type] of the values conveyed through the channel are
+	// in this order:
+	// - [ReencryptionProgressStarted], exactly once
+	// - [ReencryptionProgressRunning], zero, one or multiple times
+	// - [ReencryptionProgressCompleted] or [ReencryptionProgressError], exactly once
 	Resume(ctx context.Context, unlockKey []byte) (<-chan ReencryptionProgressEvent, error)
 }
 
