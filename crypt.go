@@ -1074,7 +1074,16 @@ func TestLUKS2ContainerKeyForKeyslot(devicePath string, name string, key []byte)
 		return false, ErrKeyslotNameNotExist
 	}
 
-	keyslotId := token.Keyslots()[0]
+	if len(token.Keyslots()) == 0 {
+		return false, xerrors.Errorf("token has no keyslot")
+	}
 
-	return luks2.TestContainerKeyForKeyslot(devicePath, keyslotId, key), nil
+	for _, keyslotId := range token.Keyslots() {
+		keyValid := luks2.TestContainerKeyForKeyslot(devicePath, keyslotId, key)
+		if !keyValid {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
