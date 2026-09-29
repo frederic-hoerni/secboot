@@ -130,9 +130,6 @@ func (s *reencryptSuite) TestInitializeErrNumberOfKeys(c *C) {
 	s.containerData["/dev/sda1"].platformKeyslots["02-default"] = nil
 	s.containerData["/dev/sda1"].platformKeyslots["03-default-fallback"] = nil
 
-	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "echo some-text")
-	defer mockCryptsetup.Restore()
-
 	reencryption := NewReencryptionImpl("/dev/sda1", "some-active-name")
 	var unlockKeys map[string][]byte
 	err := reencryption.Initialize(context.Background(), unlockKeys)
@@ -147,9 +144,6 @@ func (s *reencryptSuite) TestInitializeErrMissingKey(c *C) {
 	s.containerData["/dev/sda1"].platformKeyslots["02-default"] = nil
 	s.containerData["/dev/sda1"].platformKeyslots["03-default-fallback"] = nil
 
-	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "exit 1")
-	defer mockCryptsetup.Restore()
-
 	reencryption := NewReencryptionImpl("/dev/sda1", "some-active-name")
 	unlockKeys := make(map[string][]byte)
 	unlockKeys["token-name-1"] = []byte{3, 3, 3}
@@ -161,11 +155,19 @@ func (s *reencryptSuite) TestInitializeErrMissingKey(c *C) {
 	c.Check(err, ErrorMatches, "missing unlock key for token \"01-default-recovery\"")
 }
 
-func (s *reencryptSuite) TestInitializeErrNoToken(c *C) {
+func (s *reencryptSuite) TestInitializeErrSortedToken(c *C) {
 	s.containerData["/dev/sda1"] = nil
 
-	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "exit 1")
-	defer mockCryptsetup.Restore()
+	reencryption := NewReencryptionImpl("/dev/sda1", "some-active-name")
+	unlockKeys := make(map[string][]byte)
+	err := reencryption.Initialize(context.Background(), unlockKeys)
+
+	c.Assert(err, NotNil)
+	c.Check(err, ErrorMatches, "cannot get sorted named tokens:.*")
+}
+
+func (s *reencryptSuite) TestInitializeErrNoToken(c *C) {
+	s.containerData["/dev/sda1"] = newMockContainerData()
 
 	reencryption := NewReencryptionImpl("/dev/sda1", "some-active-name")
 	unlockKeys := make(map[string][]byte)
@@ -180,9 +182,6 @@ func (s *reencryptSuite) TestInitializeErrExtraToken(c *C) {
 	s.containerData["/dev/sda1"].recoveryKeyslots["01-default-recovery"] = 22
 	s.containerData["/dev/sda1"].platformKeyslots["02-default"] = nil
 	s.containerData["/dev/sda1"].platformKeyslots["03-default-fallback"] = nil
-
-	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "exit 1")
-	defer mockCryptsetup.Restore()
 
 	reencryption := NewReencryptionImpl("/dev/sda1", "some-active-name")
 	unlockKeys := make(map[string][]byte)

@@ -60,7 +60,9 @@ func (r reencryptionImpl) Initialize(ctx context.Context, unlockKeys map[string]
 		return fmt.Errorf("cannot parse LUKS header: %w", err)
 	}
 	tokenNames, err := view.TokenNamesSortedByKeyslotId()
-	log.Debugf("Initialize: tokenNames: %v", tokenNames)
+	if err != nil {
+		return fmt.Errorf("cannot get sorted named tokens: %w", err)
+	}
 
 	if len(tokenNames) == 0 {
 		return fmt.Errorf("cannot get any token name")
