@@ -200,7 +200,6 @@ func reencryptInitialize(args ...string) error {
 	if err != nil {
 		return fmt.Errorf("Cannot initialize: %w", err)
 	}
-	log.Debugf("Initialize: ok")
 	return nil
 }
 
