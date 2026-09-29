@@ -578,7 +578,6 @@ func TestContainerKey(devicePath string, key []byte) bool {
 // activeName: name of the active device mapper volume
 // unlockKeys: all unlock keys (passphrases) of the LUK2 container, in the order of the keyslots
 func ReencryptInitialize(ctx context.Context, activeName string, unlockKeys [][]byte) error {
-	log.Debugf("ReencryptInitialize: unlockKeys=%v", unlockKeys)
 	sizes := []string{}
 	// Prepare concatenated keys
 	var allKeys []byte
@@ -586,8 +585,6 @@ func ReencryptInitialize(ctx context.Context, activeName string, unlockKeys [][]
 		sizes = append(sizes, strconv.Itoa(len(unlockKey)))
 		allKeys = append(allKeys, unlockKey...)
 	}
-	log.Debugf("ReencryptInitialize: sizes=%v", strings.Join(sizes, ","))
-	log.Debugf("ReencryptInitialize: keys=%v", allKeys)
 
 	args := []string{
 		"reencrypt",

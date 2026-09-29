@@ -26,7 +26,6 @@ import (
 
 	"github.com/snapcore/secboot"
 	"github.com/snapcore/secboot/internal/luksview"
-	"github.com/snapcore/secboot/log"
 )
 
 // storageContainerReadWriterImpl is the main implementation that backs
@@ -142,7 +141,6 @@ func (s *storageContainerReadWriterImpl) ensureKeyslot(ctx context.Context, name
 		return fmt.Errorf("no metadata for keyslot %q", name)
 	}
 
-	log.Debugf("token.Keyslots()=%v", token.Keyslots())
 	ks.keyslotIds = token.Keyslots()
 	if ks.keyslotType == secboot.KeyslotTypePlatform {
 		// TODO: Once the functionality of luksview is implemented directly in

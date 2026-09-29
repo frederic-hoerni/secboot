@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"github.com/snapcore/secboot"
 	luks2 "github.com/snapcore/secboot/internal/luks2"
-	"github.com/snapcore/secboot/log"
 	"io"
 	"os/exec"
 )
