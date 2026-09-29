@@ -22,6 +22,7 @@ package luks2_test
 import (
 	"bytes"
 	"errors"
+	"sort"
 	"testing"
 
 	"github.com/snapcore/secboot"
@@ -146,6 +147,7 @@ func (v *mockLuksView) TokenByName(name string) (token luksview.NamedToken, id i
 	return nil, 0, false
 }
 
+// This mocked function sorts by token name (instead of by keyslot id)
 func (v *mockLuksView) TokenNamesSortedByKeyslotId() ([]string, error) {
 	if v.data == nil {
 		return nil, errors.New("error while getting token names")
@@ -159,6 +161,7 @@ func (v *mockLuksView) TokenNamesSortedByKeyslotId() ([]string, error) {
 		names = append(names, name)
 	}
 
+	sort.Strings(names)
 	return names, nil
 }
 

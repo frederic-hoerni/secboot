@@ -101,18 +101,19 @@ func (s *reencryptSuite) TestStatusError2(c *C) {
 
 func (s *reencryptSuite) TestInitialize(c *C) {
 	s.containerData["/dev/sda1"] = newMockContainerData()
-	s.containerData["/dev/sda1"].recoveryKeyslots["default-recovery"] = 22
-	s.containerData["/dev/sda1"].platformKeyslots["default"] = nil
-	s.containerData["/dev/sda1"].platformKeyslots["default-fallback"] = nil
+	// The underlying mocked TokenNamesSortedByKeyslotId will sort by token name
+	s.containerData["/dev/sda1"].recoveryKeyslots["01-default-recovery"] = 22
+	s.containerData["/dev/sda1"].platformKeyslots["02-default"] = nil
+	s.containerData["/dev/sda1"].platformKeyslots["03-default-fallback"] = nil
 
 	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "echo")
 	defer mockCryptsetup.Restore()
 
 	reencryption := NewReencryptionImpl("/dev/sda1", "some-active-name")
 	unlockKeys := make(map[string][]byte)
-	unlockKeys["default-recovery"] = []byte{3, 3, 3}
-	unlockKeys["default"] = []byte{4, 4, 4, 4}
-	unlockKeys["default-fallback"] = []byte{2, 2}
+	unlockKeys["01-default-recovery"] = []byte{3, 3, 3}
+	unlockKeys["02-default"] = []byte{4, 4, 4, 4}
+	unlockKeys["03-default-fallback"] = []byte{2, 2}
 
 	err := reencryption.Initialize(context.Background(), unlockKeys)
 	c.Assert(err, IsNil)
@@ -125,9 +126,9 @@ func (s *reencryptSuite) TestInitialize(c *C) {
 
 func (s *reencryptSuite) TestInitializeErrNumberOfKeys(c *C) {
 	s.containerData["/dev/sda1"] = newMockContainerData()
-	s.containerData["/dev/sda1"].recoveryKeyslots["default-recovery"] = 22
-	s.containerData["/dev/sda1"].platformKeyslots["default"] = nil
-	s.containerData["/dev/sda1"].platformKeyslots["default-fallback"] = nil
+	s.containerData["/dev/sda1"].recoveryKeyslots["01-default-recovery"] = 22
+	s.containerData["/dev/sda1"].platformKeyslots["02-default"] = nil
+	s.containerData["/dev/sda1"].platformKeyslots["03-default-fallback"] = nil
 
 	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "echo some-text")
 	defer mockCryptsetup.Restore()
@@ -142,9 +143,9 @@ func (s *reencryptSuite) TestInitializeErrNumberOfKeys(c *C) {
 
 func (s *reencryptSuite) TestInitializeErrMissingKey(c *C) {
 	s.containerData["/dev/sda1"] = newMockContainerData()
-	s.containerData["/dev/sda1"].recoveryKeyslots["default-recovery"] = 22
-	s.containerData["/dev/sda1"].platformKeyslots["default"] = nil
-	s.containerData["/dev/sda1"].platformKeyslots["default-fallback"] = nil
+	s.containerData["/dev/sda1"].recoveryKeyslots["01-default-recovery"] = 22
+	s.containerData["/dev/sda1"].platformKeyslots["02-default"] = nil
+	s.containerData["/dev/sda1"].platformKeyslots["03-default-fallback"] = nil
 
 	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "exit 1")
 	defer mockCryptsetup.Restore()
@@ -157,7 +158,7 @@ func (s *reencryptSuite) TestInitializeErrMissingKey(c *C) {
 	err := reencryption.Initialize(context.Background(), unlockKeys)
 
 	c.Assert(err, NotNil)
-	c.Check(err, ErrorMatches, "missing unlock key for token \"default-recovery\"")
+	c.Check(err, ErrorMatches, "missing unlock key for token \"01-default-recovery\"")
 }
 
 func (s *reencryptSuite) TestInitializeErrNoToken(c *C) {
@@ -176,9 +177,9 @@ func (s *reencryptSuite) TestInitializeErrNoToken(c *C) {
 
 func (s *reencryptSuite) TestInitializeErrExtraToken(c *C) {
 	s.containerData["/dev/sda1"] = newMockContainerData()
-	s.containerData["/dev/sda1"].recoveryKeyslots["default-recovery"] = 22
-	s.containerData["/dev/sda1"].platformKeyslots["default"] = nil
-	s.containerData["/dev/sda1"].platformKeyslots["default-fallback"] = nil
+	s.containerData["/dev/sda1"].recoveryKeyslots["01-default-recovery"] = 22
+	s.containerData["/dev/sda1"].platformKeyslots["02-default"] = nil
+	s.containerData["/dev/sda1"].platformKeyslots["03-default-fallback"] = nil
 
 	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "exit 1")
 	defer mockCryptsetup.Restore()
