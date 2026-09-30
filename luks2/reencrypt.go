@@ -53,6 +53,10 @@ func (r reencryptionImpl) Status() (*secboot.ReencryptionStatus, error) {
 	return &reencStatus, nil
 }
 
+func (r reencryptionImpl) ActiveName() string {
+	return r.dmActiveName
+}
+
 func (r reencryptionImpl) Initialize(ctx context.Context, unlockKeys map[string][]byte) error {
 	view, err := newLuksView(ctx, r.sourcePath)
 	if err != nil {

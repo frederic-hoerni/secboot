@@ -289,6 +289,7 @@ func (s *backendSuite) TestBackendNewOnlineReencryption(c *C) {
 	c.Assert(reencryption, NotNil)
 	expected := NewReencryptionImpl("/dev/sda1", "some-active-name")
 	c.Check(reencryption, DeepEquals, expected)
+	c.Check(reencryption.ActiveName(), Equals, "some-active-name")
 }
 
 func (s *backendSuite) TestBackendNewOnlineReencryptionErrNoDevice(c *C) {

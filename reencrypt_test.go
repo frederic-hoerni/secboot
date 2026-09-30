@@ -37,6 +37,10 @@ type mockReencryption struct {
 	name string
 }
 
+func (r *mockReencryption) ActiveName() string {
+	return "not implemented"
+}
+
 func (r *mockReencryption) Status() (*secboot.ReencryptionStatus, error) {
 	return nil, errors.New("not implemented")
 }

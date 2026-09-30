@@ -92,8 +92,9 @@ type ReencryptionProgressEvent struct {
 }
 
 type Reencryption interface {
-	// Status gets the status of reencryption on the underlying backend device.
-	Status() (*ReencryptionStatus, error)
+
+	// ActiveName returns the name of the online encrypted container.
+	ActiveName() string
 
 	// Initialize creates the new encryption keys on the underlying backend device.
 	//
@@ -112,6 +113,9 @@ type Reencryption interface {
 	// - [ReencryptionProgressRunning], zero, one or multiple times
 	// - [ReencryptionProgressCompleted] or [ReencryptionProgressError], exactly once
 	Resume(ctx context.Context, unlockKey []byte) (<-chan ReencryptionProgressEvent, error)
+
+	// Status gets the status of reencryption on the underlying backend device.
+	Status() (*ReencryptionStatus, error)
 }
 
 // ReencryptionForActiveVolume gets a handler for reencryption operations
