@@ -133,6 +133,34 @@ func (s *tokenSuite) TestUnmarshalRecoveryToken3(c *C) {
 	c.Check(token2, DeepEquals, token)
 }
 
+func (s *tokenSuite) TestUnmarshalRecoveryTokenErr(c *C) {
+	token := &RecoveryToken{
+		TokenBase: TokenBase{
+			TokenName:     "recovery-bar",
+			TokenKeyslots: []int{77, 88, 99}}}
+	data, err := json.Marshal(token)
+	c.Check(err, IsNil)
+
+	var token2 *RecoveryToken
+	err = json.Unmarshal(data, &token2)
+	c.Assert(err, NotNil)
+	c.Check(err, ErrorMatches, "invalid named token")
+}
+
+func (s *tokenSuite) TestUnmarshalRecoveryTokenErrOrphaned(c *C) {
+	token := &RecoveryToken{
+		TokenBase: TokenBase{
+			TokenName:     "recovery-bar",
+			TokenKeyslots: []int{}}}
+	data, err := json.Marshal(token)
+	c.Check(err, IsNil)
+
+	var token2 *RecoveryToken
+	err = json.Unmarshal(data, &token2)
+	c.Assert(err, NotNil)
+	c.Check(err, ErrorMatches, "orphaned named token")
+}
+
 func (s *tokenSuite) TestDecodeRecoveryToken(c *C) {
 	if luks2.DetectCryptsetupFeatures()&luks2.FeatureTokenImport == 0 {
 		c.Skip("cryptsetup doesn't support token import")
@@ -315,6 +343,34 @@ func (s *tokenSuite) TestUnmarshalKeyDataToken3(c *C) {
 	c.Check(json.Unmarshal(data, &token2), IsNil)
 	c.Check(token2, DeepEquals, token)
 	c.Logf("%s\n", token2.Data)
+}
+
+func (s *tokenSuite) TestUnmarshalKeyDataTokenErr(c *C) {
+	token := &KeyDataToken{
+		TokenBase: TokenBase{
+			TokenName:     "recovery-bar",
+			TokenKeyslots: []int{77, 88, 99}}}
+	data, err := json.Marshal(token)
+	c.Check(err, IsNil)
+
+	var token2 *KeyDataToken
+	err = json.Unmarshal(data, &token2)
+	c.Assert(err, NotNil)
+	c.Check(err, ErrorMatches, "invalid named token")
+}
+
+func (s *tokenSuite) TestUnmarshalKeyDataTokenErrOrphaned(c *C) {
+	token := &KeyDataToken{
+		TokenBase: TokenBase{
+			TokenName:     "recovery-bar",
+			TokenKeyslots: []int{}}}
+	data, err := json.Marshal(token)
+	c.Check(err, IsNil)
+
+	var token2 *KeyDataToken
+	err = json.Unmarshal(data, &token2)
+	c.Assert(err, NotNil)
+	c.Check(err, ErrorMatches, "orphaned named token")
 }
 
 func (s *tokenSuite) TestDecodeKeyDataToken(c *C) {
