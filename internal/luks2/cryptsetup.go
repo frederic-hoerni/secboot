@@ -85,12 +85,19 @@ const (
 	FeatureReencrypt
 )
 
+// CryptsetupStatus holds the status of an active volume, as returned by 'cryptsetup status'
 type CryptsetupStatus struct {
 	// Device is the underlying disk device of the active LUKS volume
 	Device string
-	// Reencryption indicates the state of reencryption as reported by 'cryptsetup status'
+	// Reencryption indicates the state of reencryption
 	Reencryption string
+	// LuksType indicates if the volume is recognized as a LUKS2 device ("LUKS2") or not ("n/a")
+	CryptsetupType string
 }
+
+const (
+	CryptsetupTypeLUKS2 = "LUKS2"
+)
 
 // cryptsetupCmd is a helper for running the cryptsetup command. If stdin is supplied, data read
 // from it is supplied to cryptsetup via its stdin. If callback is supplied, it will be invoked
@@ -637,7 +644,7 @@ func ReadCryptsetupStatus(activeName string) (*CryptsetupStatus, error) {
 	outReader := bytes.NewReader(out)
 
 	scanner := bufio.NewScanner(outReader)
-	var device, reencryption string
+	var device, reencryption, cryptsetupType string
 	for scanner.Scan() {
 		line := scanner.Text()
 		tokens := strings.Fields(string(line))
@@ -645,6 +652,8 @@ func ReadCryptsetupStatus(activeName string) (*CryptsetupStatus, error) {
 			switch tokens[0] {
 			case "device:":
 				device = tokens[1]
+			case "type:":
+				cryptsetupType = tokens[1]
 			case "reencryption:":
 				reencryption = tokens[1]
 			}
@@ -655,8 +664,9 @@ func ReadCryptsetupStatus(activeName string) (*CryptsetupStatus, error) {
 		fmt.Println("Status: err=", err)
 	}
 	return &CryptsetupStatus{
-		Device:       device,
-		Reencryption: reencryption,
+		Device:         device,
+		Reencryption:   reencryption,
+		CryptsetupType: cryptsetupType,
 	}, nil
 }
 

@@ -281,7 +281,8 @@ func (s *backendSuite) TestBackendProbeActivatedNotLUKS2(c *C) {
 
 func (s *backendSuite) TestBackendNewOnlineReencryption(c *C) {
 	// Test NewOnlineReencryption on nominal case
-	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "echo device: /dev/sda1; echo reencryption: yes")
+	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup",
+		"echo device: /dev/sda1; echo reencryption: yes; echo type: LUKS2")
 	defer mockCryptsetup.Restore()
 
 	reencryption, err := s.backend.NewOnlineReencryption("some-active-name")
@@ -292,9 +293,19 @@ func (s *backendSuite) TestBackendNewOnlineReencryption(c *C) {
 	c.Check(reencryption.ActiveName(), Equals, "some-active-name")
 }
 
+func (s *backendSuite) TestBackendNewOnlineReencryptionErrNotLuks2(c *C) {
+	// Test NewOnlineReencryption when type is not LUKS2
+	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "echo device: /dev/sda1; echo reencryption: yes")
+	defer mockCryptsetup.Restore()
+
+	reencryption, err := s.backend.NewOnlineReencryption("some-active-name")
+	c.Assert(reencryption, IsNil)
+	c.Assert(err, IsNil)
+}
+
 func (s *backendSuite) TestBackendNewOnlineReencryptionErrNoDevice(c *C) {
 	// Test NewOnlineReencryption when cryptsetup does not return the underlying disk device
-	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "echo reencryption: yes")
+	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "echo reencryption: yes; echo type: LUKS2")
 	defer mockCryptsetup.Restore()
 
 	reencryption, err := s.backend.NewOnlineReencryption("some-active-name")
@@ -303,7 +314,7 @@ func (s *backendSuite) TestBackendNewOnlineReencryptionErrNoDevice(c *C) {
 	c.Assert(reencryption, IsNil)
 }
 
-func (s *backendSuite) TestBackendNewOnlineReencryptionErr(c *C) {
+func (s *backendSuite) TestBackendNewOnlineReencryptionErrExit1(c *C) {
 	// Test NewOnlineReencryption when cryptsetup exits with 1
 	mockCryptsetup := snapd_testutil.MockCommand(c, "cryptsetup", "exit 1")
 	defer mockCryptsetup.Restore()

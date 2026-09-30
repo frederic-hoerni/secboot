@@ -124,11 +124,13 @@ func ReencryptionForActiveVolume(activeName string) (Reencryption, error) {
 	for name, backend := range storageContainerHandlers {
 		reencrypt, err := backend.NewOnlineReencryption(activeName)
 		if err != nil {
+			// This backend is supposed to handle this active name, but there is an error
 			return nil, fmt.Errorf("cannot probe %q backend for active name %q: %w", name, activeName, err)
 		}
 		if reencrypt != nil {
 			return reencrypt, nil
 		}
+		// This backend is not supposed to handle this active name
 		// Look for another registered backend
 	}
 

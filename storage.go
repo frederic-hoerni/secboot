@@ -67,8 +67,8 @@ type StorageContainerBackend interface {
 	ProbeActivated(ctx context.Context, path string) (StorageContainer, error)
 
 	// NewOnlineReencryption returns a Reencryption instance for the
-	// supplied active device mapper name. This instance can subsequently be
-	// used for doing reencryption operations.
+	// supplied name of an active encrypted volume. This instance can
+	// subsequently be used for doing reencryption operations.
 	//
 	// It returns (nil, nil) if it cannot be handled by this backend.
 	NewOnlineReencryption(activeName string) (Reencryption, error)
