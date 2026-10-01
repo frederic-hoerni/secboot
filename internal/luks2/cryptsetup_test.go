@@ -693,7 +693,7 @@ func (s *cryptsetupSuite) TestReencryptResume(c *C) {
 	c.Check(mockCryptsetup.Calls()[0], DeepEquals, []string{
 		"cryptsetup", "reencrypt", "--type", "luks2", "--key-file", "-",
 		"--batch-mode", "--resume-only", "--progress-frequency", "1", "--progress-json",
-		"--hotzone-size", "10M", "--active-name", "some-active-name"})
+		"--active-name", "some-active-name"})
 
 	// Wait for both readers to finish digesting the streams
 	<-outputDone

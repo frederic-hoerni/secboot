@@ -626,7 +626,6 @@ func ReencryptResume(ctx context.Context, activeName string, unlockKey []byte) (
 		"--resume-only",
 		"--progress-frequency", "1",
 		"--progress-json",
-		"--hotzone-size", "10M",
 		"--active-name", activeName}
 
 	// Unlock key is read from stdin
