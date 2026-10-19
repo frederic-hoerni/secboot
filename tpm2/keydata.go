@@ -293,3 +293,14 @@ func (k *SealedKeyData) UnmarshalJSON(data []byte) error {
 	k.data = kd
 	return nil
 }
+
+func (k *SealedKeyData) String(indent string) string {
+	var result string
+	result += indent + fmt.Sprintf("Version: %v\n", k.data.Version())
+	result += indent + fmt.Sprintf("KeyPrivate: %x\n", k.data.Private())
+	result += indent + fmt.Sprintf("KeyPublic: %v\n", k.data.Public())
+	result += indent + fmt.Sprintf("KeyImportSymSeed: %v\n", k.data.ImportSymSeed())
+	result += indent + fmt.Sprintf("PolicyData:\n")
+	result += k.data.Policy().String(indent + "    ")
+	return result
+}

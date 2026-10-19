@@ -474,3 +474,22 @@ func (p *keyDataPolicy_v3) ValidateAuthKey(key secboot.PrimaryKey) error {
 
 	return nil
 }
+
+func (p *keyDataPolicy_v3) String(indent string) string {
+	var result string
+	result += indent + "Policy v3\n"
+	result += indent + fmt.Sprintf("PCRPolicyCounterHandle: %v\n", p.PCRPolicyCounterHandle())
+	result += indent + fmt.Sprintf("AuthPublicKey: %v\n", p.StaticData.AuthPublicKey)
+	result += indent + fmt.Sprintf("RequireAuthValue: %v\n", p.StaticData.RequireAuthValue)
+	for _, selection := range p.PCRData.Selection {
+		result += indent + fmt.Sprintf("PCRSelection: %v %v\n", selection.Hash, selection.Select)
+	}
+	for index, orData := range p.PCRData.OrData {
+		result += indent + fmt.Sprintf("OrData[%v]: %x %v\n", index, orData.Digests, orData.Next)
+	}
+	result += indent + fmt.Sprintf("PolicySequence: %v\n", p.PCRPolicySequence())
+	result += indent + fmt.Sprintf("AuthorizedPolicy: %x\n", p.PCRData.AuthorizedPolicy)
+	result += indent + fmt.Sprintf("AuthorizedPolicySignature: %v\n", p.PCRData.AuthorizedPolicySignature)
+
+	return result
+}

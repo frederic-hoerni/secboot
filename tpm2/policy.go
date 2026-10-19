@@ -131,6 +131,8 @@ type keyDataPolicy interface {
 	// ValidateAuthKey verifies that the supplied key is associated with this
 	// keyDataPolicy.
 	ValidateAuthKey(key secboot.PrimaryKey) error
+
+	String(indent string) string
 }
 
 // createPcrPolicyCounterLegacy creates and initializes a NV counter that is associated with a sealed key object

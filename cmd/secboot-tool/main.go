@@ -14,6 +14,7 @@ Commands:
     deactivate                Deactivate (close) an encrypted container	
     get-unlockkey-from-kernel Get an unlock key from the kernel's keyring
     print-tokens              Print tokens of a LUKS2 device
+    print-sealed-data         Print sealed data
 `
 
 func die(message string) {
@@ -35,6 +36,8 @@ func main() {
 		err = cmdGetDiskUnlockKeyFromKernel(args)
 	case "print-tokens":
 		err = cmdPrintTokens(args)
+	case "print-sealed-data":
+		err = cmdPrintSealedData(args)
 	case "init":
 		err = cmdInitContainerPlainkey(args)
 	case "activate":
